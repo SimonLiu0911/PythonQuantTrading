@@ -43,5 +43,4 @@ print(f"輸出結果：{Annotated_example(3, 4)}")
 
 
 
-
 # %%
