@@ -2,6 +2,7 @@ import os, finlab
 from dotenv import load_dotenv
 from typing_extensions import Annotated
 import pandas as pd
+import yfinance as yf
 
 print(load_dotenv)
 
@@ -59,3 +60,75 @@ def get_top_stocks_by_market_value(
         return company_info.head(top_n)["stock_id"].tolist()
     else:
         return company_info["stock_id"].tolist()
+
+def get_daily_close_prices_data(
+        stock_symbols: Annotated[List[str], "股票代碼列表"],
+        start_date: Annotated[str, "起始日期", "YYYY-MM-DD"],
+        end_date: Annotated[str, "結束日期", "YYYY-MM-DD"],
+        is_tw_stock: Annotated[bool, "stock_symbols 是否是台灣股票"] = True,
+) -> Annotated[
+    pd.DataFrame,
+    "每日股票收盤價資料表",
+    "索隱世日期(DatetimeIndex格式)",
+    "欄位名稱包含股票代碼",
+]:
+    """
+    函式說明：
+    獲取指定股票清單(stock_symbols)在給定日期範圍內(start_date~end_date)哪日收盤價資料。
+    """
+    # 如果是台灣股票，則在每個股票代碼後加上".TW"
+    if is_tw_stock:
+        stock_symbols = [
+            f"{symbol}.TW" if ".TW" not in symbol else symbol
+            for symbol in stock_symbols
+        ]
+    # 從 YFinance 下載指定股票在給定日期範圍內的數據，並取出收盤價欄位(Close)的資料
+    stock_data = yf.download(stock_symbols, start=start_date, end=end_date)["Close"]
+    # 如果只取一支股票，將其轉換為 DataFrame 並設定欄位名稱為該股票代碼
+    if len(stock_symbols) == 1:
+        stock_data = pd.DataFrame(stock_data)
+        stock_data.columns = stock_symbols
+    # 使用向前填補方法處理資料中遺失值
+    stock_data = stock_data.ffill()
+    # 將欄位名稱中的 ".TW" 移除，只保留股票代碼
+    stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
+    return stock_data
+
+def get_factor_data(
+        stock_symbols: Annotated[List[str], "股票代碼列表"],
+        factor_name: Annotated[str, "因子名稱"],
+        trading_days: Annotated[
+            List[DatetimeIndex], "如果有指定日期，就會將資料的平率從季頻擴充成此交易日頻率"
+        ] = None,
+) -> Annotated[
+    pd.DataFrame,
+    "有指定trading_days，回傳多索引資料表，索隱世datetime和asset，欄位包含Value(因子值)",
+    "未指定trading_days，回傳原始FinLab因子資料表，索隱世datetime，欄位包含股票代碼"
+]:
+    """
+    函式說明：
+    從 FinLab 獲取指定股價清單(stock_symbols)的單個因子(factoe_name)資料，並根據需求擴展至交易日頻率資料或是回傳原始季頻因子資料。
+    如果沒有指定交易日(trading_days)，則回傳原始季頻因子資料。
+    """
+    # 從 FinLab 獲取指定因子資料表，並藉由加上 .deadline() 將索引格式轉為財報截止日
+    factor_data = data.get(f"fundamental_features:{factor_name}").deadline()
+    # 如果指定了股票代碼列表，則篩選出特定股票的因子資料
+    if stock_symbols:
+        factor_data = factor_data[stock_symbols]
+    # 如果指定了交易日，則將「季度頻率」的因子資料擴展至「交易日頻率」的資料，否則回傳原始資料
+    if trading_days is not None:
+        factor_data = factor_data.reset_index()
+        factor_data = extend_factor_data(
+            factor_data=factor_data, trading_days=trading_days
+        )
+        # 使用 melt 轉會資料格式
+        factor_data = factor_data.melt(
+            id_vars="index", var_name="asset", value_name="value"
+        )
+        # 重新命名欄位名稱，且根據日期、股票代碼進行排序，最後設定多重索引 datatime 和 asset
+        factor_data = (
+            factor_data.rename(columns={"index": "datetime"})
+            .sort_values(by=["datetime", "asset"])
+            .set_index(["datetime", "asset"])
+        )
+    return factor_data
