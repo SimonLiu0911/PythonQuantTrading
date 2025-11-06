@@ -3,6 +3,8 @@
 ## Necessary Plugin:
 typing_extensions:
 一個為 Python 型別提示的工具，能在型別提示中附加額外說明，適合在函式參數中提供更詳細的描述。
+
+typing
 python-dotenv
 yfinance
 finlab

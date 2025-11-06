@@ -6,11 +6,8 @@ from typing_extensions import Annotated
 from typing import Tuple
 from finlab import data
 
-print(load_dotenv)
-
 # current_folder = os.path.dirname(__file__) # 目前程式檔案所在的資料夾相對路徑
 # parent_folder = os.path.dirname(current_folder) # 目前程式檔案所在的資料夾的上一層資料夾路徑
-print(typing)
 
 def finlab_login() -> None:
     """
@@ -103,7 +100,7 @@ def get_factor_data(
         stock_symbols: Annotated[list[str], "股票代碼列表"],
         factor_name: Annotated[str, "因子名稱"],
         trading_days: Annotated[
-            list[DatetimeIndex], "如果有指定日期，就會將資料的平率從季頻擴充成此交易日頻率"
+            list[pd.DatetimeIndex], "如果有指定日期，就會將資料的平率從季頻擴充成此交易日頻率"
         ] = None,
 ) -> Annotated[
     pd.DataFrame,
@@ -144,7 +141,7 @@ def extend_factor_data(
             "未擴充前的因子資料表",
             "欄位名稱包涵index(日期欄位名稱)和股票代碼",
         ],
-        trading_days: Annotated[list[DatetimeIndex], "交易日的列表"],
+        trading_days: Annotated[list[pd.DatetimeIndex], "交易日的列表"],
 ) -> Annotated[
     pd.DataFrame,
     "填補後的因子資料表",
