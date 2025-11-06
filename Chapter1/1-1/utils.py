@@ -1,11 +1,16 @@
-import os, finlab
+import os, finlab, typing
+import yfinance as yf
+import pandas as pd
 from dotenv import load_dotenv
 from typing_extensions import Annotated
-import pandas as pd
-import yfinance as yf
+from typing import Tuple
+from finlab import data
 
 print(load_dotenv)
 
+# current_folder = os.path.dirname(__file__) # 目前程式檔案所在的資料夾相對路徑
+# parent_folder = os.path.dirname(current_folder) # 目前程式檔案所在的資料夾的上一層資料夾路徑
+print(typing)
 
 def finlab_login() -> None:
     """
@@ -22,10 +27,10 @@ def finlab_login() -> None:
 
 
 def get_top_stocks_by_market_value(
-        excluded_industry: Annotated[List[str], "需要排除特定產業類別列表"] = [],
+        excluded_industry: Annotated[list[str], "需要排除特定產業類別列表"] = [],
         pre_list_date: Annotated[str, "上市日期需早於此指定日期"] = None,
         top_n: Annotated[int, "市值前 N 大的公司"] = None,
-) -> Annotated[List[str], "符合條件的公司代碼列表"]:
+) -> Annotated[list[str], "符合條件的公司代碼列表"]:
     """
     函式說明：
     篩選市值前 N 大的上市公司股票代碼，並以列表形式回傳。篩選過程包括以下條件：
@@ -62,7 +67,7 @@ def get_top_stocks_by_market_value(
         return company_info["stock_id"].tolist()
 
 def get_daily_close_prices_data(
-        stock_symbols: Annotated[List[str], "股票代碼列表"],
+        stock_symbols: Annotated[list[str], "股票代碼列表"],
         start_date: Annotated[str, "起始日期", "YYYY-MM-DD"],
         end_date: Annotated[str, "結束日期", "YYYY-MM-DD"],
         is_tw_stock: Annotated[bool, "stock_symbols 是否是台灣股票"] = True,
@@ -95,10 +100,10 @@ def get_daily_close_prices_data(
     return stock_data
 
 def get_factor_data(
-        stock_symbols: Annotated[List[str], "股票代碼列表"],
+        stock_symbols: Annotated[list[str], "股票代碼列表"],
         factor_name: Annotated[str, "因子名稱"],
         trading_days: Annotated[
-            List[DatetimeIndex], "如果有指定日期，就會將資料的平率從季頻擴充成此交易日頻率"
+            list[DatetimeIndex], "如果有指定日期，就會將資料的平率從季頻擴充成此交易日頻率"
         ] = None,
 ) -> Annotated[
     pd.DataFrame,
@@ -132,3 +137,78 @@ def get_factor_data(
             .set_index(["datetime", "asset"])
         )
     return factor_data
+
+def extend_factor_data(
+        factor_data: Annotated[
+            pd.DataFrame,
+            "未擴充前的因子資料表",
+            "欄位名稱包涵index(日期欄位名稱)和股票代碼",
+        ],
+        trading_days: Annotated[list[DatetimeIndex], "交易日的列表"],
+) -> Annotated[
+    pd.DataFrame,
+    "填補後的因子資料表",
+    "欄位名稱包涵index(日期欄位名稱)和股票代碼",
+]:
+    """
+    函式說明：
+    將因子資料(factor_data)擴展至交易日頻率(trading_days)資料，使用向前填補的方式補值。
+    """
+    # 將交易日列表轉換為 DataFrame 格式，索引為指定的交易日的列表
+    trading_days_df = pd.DataFrame(trading_days, columns=["index"])
+    # 將交易日資料與因子資料進行合併，以交易日資料有的日期為主
+    extended_data = pd.merge(trading_days_df, factor_data, on="index", how="outer")
+    extended_data = extended_data.ffill()
+    # 最後只回傳在和 trading_days_df 時間重疊的資料
+    extended_data = extended_data[
+        (extended_data["index"] >= min(trading_days_df["index"]))
+        & (extended_data["index"] <= max(trading_days_df["index"]))
+    ]
+    return extended_data
+
+def convert_quarter_to_date(
+        quarter: Annotated[str, "年-季度字串，例如：2013-01"],
+) -> Annotated[Tuple[str, str], "季度對應的起始和結束日期字串"]:
+    """
+    函式說明：
+    將季度字串(quarter)轉換為起始和結束日期字串。
+    ex: 2013-Q1 -> 2013-05-16, 2013-08-14
+    """
+    year, qtr = quarter.split("-")
+    if qtr == "Q1":
+        return f"{year}-05-16", f"{year}-08-14"
+    if qtr == "Q2":
+        return f"{year}-06-15", f"{year}-11-14"
+    if qtr == "Q3":
+        return f"{year}-11-15", f"{int(year) + 1}-03-31"
+    if qtr == "Q4":
+        return f"{int(year) + 1}-04-01", f"{int(year) + 1}-05-15"
+
+def convert_date_to_quarter(
+        date: Annotated[str, "日期字串，格式為 YYYY-MM-DD"],
+) -> Annotated[str, "對應的季度字串"]:
+    """
+    函式說明：
+    將日期字串(date)轉換為季度字串。
+    ex: 2013-05-16 -> 2013-Q1
+    YYYY-MM-DD -> YYYY-q
+    """
+    # 將字串轉換為日期格式
+    date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    year, month, day = (
+        date_obj.year,
+        date_obj.month,
+        date_obj.day,
+    ) # 獲取年份、月份和日期
+    # 根據日期判斷所屬的季度並回傳相應的季度字串
+    if month == 5 and day >= 16 or month in [6, 7] or (month == 8 and day <= 14):
+        return f"{year}-Q1"
+    elif month == 8 and day >= 15 or month in [9, 10] or (month == 11 and day <= 14):
+        return f"{year}-Q2"
+    elif month == 11 and day >= 15 or month in [12]:
+        return f"{year}-Q3"
+    elif (month == 1) or (month == 2) or (month == 3 and day <= 31):
+        return f"{year - 1}-Q3"
+    elif month == 4 or (month == 5 and day <= 15):
+        return f"{year}-Q4"
+        
