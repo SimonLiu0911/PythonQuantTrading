@@ -1,15 +1,13 @@
-from __future__ import annotations
-import os, finlab
+import os, finlab, typing
 import yfinance as yf
 import pandas as pd
 from dotenv import load_dotenv
 from typing_extensions import Annotated
-from typing import Tuple, Iterable, Annotated
+from typing import Tuple
 from finlab import data
 
 # current_folder = os.path.dirname(__file__) # 目前程式檔案所在的資料夾相對路徑
 # parent_folder = os.path.dirname(current_folder) # 目前程式檔案所在的資料夾的上一層資料夾路徑
-
 
 def finlab_login() -> None:
     """
@@ -26,9 +24,9 @@ def finlab_login() -> None:
 
 
 def get_top_stocks_by_market_value(
-    excluded_industry: Annotated[list[str], "需要排除特定產業類別列表"] = [],
-    pre_list_date: Annotated[str, "上市日期需早於此指定日期"] = None,
-    top_n: Annotated[int, "市值前 N 大的公司"] = None,
+        excluded_industry: Annotated[list[str], "需要排除特定產業類別列表"] = [],
+        pre_list_date: Annotated[str, "上市日期需早於此指定日期"] = None,
+        top_n: Annotated[int, "市值前 N 大的公司"] = None,
 ) -> Annotated[list[str], "符合條件的公司代碼列表"]:
     """
     函式說明：
@@ -38,7 +36,7 @@ def get_top_stocks_by_market_value(
     3. 選擇市值前 N 大的上市公司(top_n)
     """
     # 從 FinLab 取得公司基本資料表，內容包括公司股票代碼、公司名稱、上市日期和產業類別
-    company_info = data.get("company_basic_info")[
+    company_info = data.get("company_basic_info") [
         ["stock_id", "公司名稱", "上市日期", "產業類別", "市場別"]
     ]
     # 如果有指定要拍廚的產業類別，則過濾掉這些產業的公司
@@ -54,7 +52,7 @@ def get_top_stocks_by_market_value(
         market_value = pd.DataFrame(data.get("etl:market_value"))
         market_value = market_value[market_value.index == pre_list_date]
         market_value = market_value.reset_index().melt(
-            id_vars="date", var_name="stock_id", value_name="market_value"
+            id_vars = "date", var_name="stock_id", value_name="market_value"
         )
         # 將市值數據表與公司資訊表根據股票代碼欄位(stock_id)進行合併
         # 並根據市值欄位(market_value)將公司由大到小排序
@@ -65,12 +63,11 @@ def get_top_stocks_by_market_value(
     else:
         return company_info["stock_id"].tolist()
 
-
 def get_daily_close_prices_data(
-    stock_symbols: Annotated[list[str], "股票代碼列表"],
-    start_date: Annotated[str, "起始日期", "YYYY-MM-DD"],
-    end_date: Annotated[str, "結束日期", "YYYY-MM-DD"],
-    is_tw_stock: Annotated[bool, "stock_symbols 是否是台灣股票"] = True,
+        stock_symbols: Annotated[list[str], "股票代碼列表"],
+        start_date: Annotated[str, "起始日期", "YYYY-MM-DD"],
+        end_date: Annotated[str, "結束日期", "YYYY-MM-DD"],
+        is_tw_stock: Annotated[bool, "stock_symbols 是否是台灣股票"] = True,
 ) -> Annotated[
     pd.DataFrame,
     "每日股票收盤價資料表",
@@ -99,118 +96,52 @@ def get_daily_close_prices_data(
     stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
     return stock_data
 
-
-# def get_factor_data(
-#         stock_symbols: Annotated[list[str], "股票代碼列表"],
-#         factor_name: Annotated[str, "因子名稱"],
-#         trading_days: Annotated[
-#             list[pd.DatetimeIndex], "如果有指定日期，就會將資料的平率從季頻擴充成此交易日頻率"
-#         ] = None,
-# ) -> Annotated[
-#     pd.DataFrame,
-#     "有指定trading_days，回傳多索引資料表，索隱世datetime和asset，欄位包含Value(因子值)",
-#     "未指定trading_days，回傳原始FinLab因子資料表，索隱世datetime，欄位包含股票代碼"
-# ]:
-#     """
-#     函式說明：
-#     從 FinLab 獲取指定股價清單(stock_symbols)的單個因子(factoe_name)資料，並根據需求擴展至交易日頻率資料或是回傳原始季頻因子資料。
-#     如果沒有指定交易日(trading_days)，則回傳原始季頻因子資料。
-#     """
-#     # 從 FinLab 獲取指定因子資料表，並藉由加上 .deadline() 將索引格式轉為財報截止日
-#     factor_data = data.get(f"fundamental_features:{factor_name}").deadline()
-#     # 如果指定了股票代碼列表，則篩選出特定股票的因子資料
-#     if stock_symbols:
-#         factor_data = factor_data[stock_symbols]
-#     # 如果指定了交易日，則將「季度頻率」的因子資料擴展至「交易日頻率」的資料，否則回傳原始資料
-#     if trading_days is not None:
-#         factor_data = factor_data.reset_index()
-#         factor_data = extend_factor_data(
-#             factor_data=factor_data, trading_days=trading_days
-#         )
-#         # 使用 melt 轉會資料格式
-#         factor_data = factor_data.melt(
-#             id_vars="index", var_name="asset", value_name="value"
-#         )
-#         # 重新命名欄位名稱，且根據日期、股票代碼進行排序，最後設定多重索引 datatime 和 asset
-#         factor_data = (
-#             factor_data.rename(columns={"index": "datetime"})
-#             .sort_values(by=["datetime", "asset"])
-#             .set_index(["datetime", "asset"])
-#         )
-#     return factor_data
-
-
 def get_factor_data(
-    stock_symbols: Annotated[list[str], "股票代碼列表"],
-    factor_name: Annotated[str, "因子名稱"],
-    trading_days: Annotated[
-        Iterable[pd.Timestamp] | pd.DatetimeIndex | None, "指定則把季頻擴展到這些交易日"
-    ] = None,
+        stock_symbols: Annotated[list[str], "股票代碼列表"],
+        factor_name: Annotated[str, "因子名稱"],
+        trading_days: Annotated[
+            list[pd.DatetimeIndex], "如果有指定日期，就會將資料的平率從季頻擴充成此交易日頻率"
+        ] = None,
 ) -> Annotated[
     pd.DataFrame,
-    "有指定 trading_days 時：MultiIndex(datetime, asset) + column 'value'；未指定時：index=datetime，columns=股票代碼",
+    "有指定trading_days，回傳多索引資料表，索隱世datetime和asset，欄位包含Value(因子值)",
+    "未指定trading_days，回傳原始FinLab因子資料表，索隱世datetime，欄位包含股票代碼"
 ]:
     """
-    從 FinLab 取得指定因子，選出目標股票；若指定 trading_days，則擴展為交易日頻率並長表化。
+    函式說明：
+    從 FinLab 獲取指定股價清單(stock_symbols)的單個因子(factoe_name)資料，並根據需求擴展至交易日頻率資料或是回傳原始季頻因子資料。
+    如果沒有指定交易日(trading_days)，則回傳原始季頻因子資料。
     """
-    # 1) 讀因子（假設回傳的是 pandas.DataFrame，index=財報日，columns=股票代碼）
+    # 從 FinLab 獲取指定因子資料表，並藉由加上 .deadline() 將索引格式轉為財報截止日
     factor_data = data.get(f"fundamental_features:{factor_name}").deadline()
-    factor_data = factor_data.copy()
-
-    # 2) 欄名正規化：全部轉字串、去空白（避免 '2330 ' / 2330 / '2330.TW' 類型落差）
-    cols = pd.Index(factor_data.columns).astype(str).str.strip()
-
-    # 若你的欄名帶後綴（例如 '.TW'），去掉再比對（必要時打開）
-    # cols = cols.str.replace(r"\.TW$", "", regex=True)
-
-    factor_data.columns = cols
-
-    # 3) 選股：用 reindex 保留順序；缺失者補 NaN 並提出警告（不會拋 KeyError）
+    # 如果指定了股票代碼列表，則篩選出特定股票的因子資料
     if stock_symbols:
-        want = pd.Index(stock_symbols).astype(str).str.strip()
-        # 若需要補零至 4 碼（像 '9103'），可加： want = want.str.zfill(4)
-
-        missing = want.difference(factor_data.columns)
-        if len(missing) > 0:
-            print(
-                f"[warn] 下列代碼不在因子欄位中（將以 NaN 補）：{list(missing)[:20]}"
-                f"{' …' if len(missing) > 20 else ''}"
-            )
-        factor_data = factor_data.reindex(columns=want)  # 不會丟 KeyError
-
-    # 4) 若不要求交易日，直接回傳（寬表）
-    if trading_days is None:
-        return factor_data
-
-    # 5) 轉為交易日頻率：用 DatetimeIndex 對齊 + ffill（建議的 extend 寫法）
-    #    你的 extend_factor_data 也可以用，但 reindex 更簡潔、效能好
-    #    先整理索引與交易日
-    factor_data = factor_data.sort_index()
-    td = pd.DatetimeIndex(pd.to_datetime(list(trading_days))).unique().sort_values()
-    out = (
-        factor_data.reindex(td)  # 對齊到交易日
-        .ffill()  # 向前填補
-        .reset_index()
-        .rename(columns={"index": "datetime"})
-    )
-
-    # 6) 長表化 & 設定 MultiIndex
-    out = (
-        out.melt(id_vars="datetime", var_name="asset", value_name="value")
-        .sort_values(["datetime", "asset"])
-        .set_index(["datetime", "asset"])
-    )
-
-    return out
-
+        factor_data = factor_data[stock_symbols]
+    # 如果指定了交易日，則將「季度頻率」的因子資料擴展至「交易日頻率」的資料，否則回傳原始資料
+    if trading_days is not None:
+        factor_data = factor_data.reset_index()
+        factor_data = extend_factor_data(
+            factor_data=factor_data, trading_days=trading_days
+        )
+        # 使用 melt 轉會資料格式
+        factor_data = factor_data.melt(
+            id_vars="index", var_name="asset", value_name="value"
+        )
+        # 重新命名欄位名稱，且根據日期、股票代碼進行排序，最後設定多重索引 datatime 和 asset
+        factor_data = (
+            factor_data.rename(columns={"index": "datetime"})
+            .sort_values(by=["datetime", "asset"])
+            .set_index(["datetime", "asset"])
+        )
+    return factor_data
 
 def extend_factor_data(
-    factor_data: Annotated[
-        pd.DataFrame,
-        "未擴充前的因子資料表",
-        "欄位名稱包涵index(日期欄位名稱)和股票代碼",
-    ],
-    trading_days: Annotated[list[pd.DatetimeIndex], "交易日的列表"],
+        factor_data: Annotated[
+            pd.DataFrame,
+            "未擴充前的因子資料表",
+            "欄位名稱包涵index(日期欄位名稱)和股票代碼",
+        ],
+        trading_days: Annotated[list[pd.DatetimeIndex], "交易日的列表"],
 ) -> Annotated[
     pd.DataFrame,
     "填補後的因子資料表",
@@ -232,9 +163,8 @@ def extend_factor_data(
     ]
     return extended_data
 
-
 def convert_quarter_to_date(
-    quarter: Annotated[str, "年-季度字串，例如：2013-01"],
+        quarter: Annotated[str, "年-季度字串，例如：2013-01"],
 ) -> Annotated[Tuple[str, str], "季度對應的起始和結束日期字串"]:
     """
     函式說明：
@@ -251,9 +181,8 @@ def convert_quarter_to_date(
     if qtr == "Q4":
         return f"{int(year) + 1}-04-01", f"{int(year) + 1}-05-15"
 
-
 def convert_date_to_quarter(
-    date: Annotated[str, "日期字串，格式為 YYYY-MM-DD"],
+        date: Annotated[str, "日期字串，格式為 YYYY-MM-DD"],
 ) -> Annotated[str, "對應的季度字串"]:
     """
     函式說明：
@@ -267,7 +196,7 @@ def convert_date_to_quarter(
         date_obj.year,
         date_obj.month,
         date_obj.day,
-    )  # 獲取年份、月份和日期
+    ) # 獲取年份、月份和日期
     # 根據日期判斷所屬的季度並回傳相應的季度字串
     if month == 5 and day >= 16 or month in [6, 7] or (month == 8 and day <= 14):
         return f"{year}-Q1"
@@ -279,3 +208,4 @@ def convert_date_to_quarter(
         return f"{year - 1}-Q3"
     elif month == 4 or (month == 5 and day <= 15):
         return f"{year}-Q4"
+        
