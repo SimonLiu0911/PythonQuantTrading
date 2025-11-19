@@ -74,7 +74,7 @@ def get_daily_close_prices_data(
 ) -> Annotated[
     pd.DataFrame,
     "每日股票收盤價資料表",
-    "索隱世日期(DatetimeIndex格式)",
+    "索引式日期(DatetimeIndex格式)",
     "欄位名稱包含股票代碼",
 ]:
     """

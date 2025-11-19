@@ -3,6 +3,8 @@ import json, os, sys
 from alphalens.tears import create_full_tear_sheet
 from alphalens.utils import get_clean_factor_and_forward_returns
 
+# get_clean_factor_and_forward_returns: 可以根據 period 參數來設置分析的時間範圍
+
 utils_folder_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(utils_folder_path)
 # 載入 Chapter1 資料夾中的 utils.py 模組，並命名為 chap1_utils
