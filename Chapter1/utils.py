@@ -80,6 +80,14 @@ def get_daily_close_prices_data(
     """
     函式說明：
     獲取指定股票清單(stock_symbols)在給定日期範圍內(start_date~end_date)哪日收盤價資料。
+    備註：yf.download
+    Date: 日期，表明數據點的具體日期。
+    Open: 開盤價，指股票在該交易日開市時的價格。
+    High: 最高價，指股票在該交易日的最高交易價格。
+    Low: 最低價，指股票在該交易日的最低交易價格。
+    Close: 收盤價，指股票在該交易日結束時的價格。
+    Adj Close: 調整後收盤價，將股票分割和股息等因素考慮進去後的收盤價。
+    Volumn: 交易量，表示在該交易日內買賣該股票的總股數。
     """
     # 如果是台灣股票，則在每個股票代碼後加上".TW"
     if is_tw_stock:
