@@ -287,3 +287,90 @@ def convert_date_to_quarter(
         return f"{year - 1}-Q3"
     elif month == 4 or (month == 5 and day <= 15):
         return f"{year}-Q4"
+
+
+def rank_stocks_by_factor(
+    factor_df: Annotated[
+        pd.DataFrame,
+        "因子資料表",
+        "欄位名稱含asset(股票代碼欄位)、datetime(日期欄位)、value(因子值欄位)",
+    ],
+    positive_corr: Annotated[bool, "因子與股價變動是否正相關，正相關為True，負相關為False"],
+    rank_column: Annotated[str, "用於排序的欄位名稱"],
+    rank_result_column: Annotated[str, "保存排序結果的欄位名稱"] = "rank",
+) -> Annotated[
+    pd.Dateframe,
+    "包含排序結果的因子資料表",
+    "欄位名稱含asset(股票代碼欄位)、datetime(日期欄位)、value(因子值欄位)、rank(排序結果欄位)",
+]:
+    """
+    函式說明：
+    根據某個指定因子的值(rank_column)對股票進行排序，遞增或遞減排序方式取決於因子與未來收益的相關性(positive_corr)。
+    如果相關性為正，則將股票案因子值由小到大排序；如果相關性為負，則將股票按因子值由大到小排序。
+    最後，將排序結果新增至原因子資料表中，且指定排序結果欄位名稱為 rank_result_column。
+    """
+    # 複製因子資料表，以避免對原資料進行修改
+    ranked_df = factor_df.copy()
+    # 將 datetime 欄位設置為索引
+    ranked_df = ranked_df.set_index("datetime")
+    # 針對每一天的資料，根據指定的因子欄位進行排名
+    # 如果因子與收益正相關，則根據因子值由小到大排名
+    # 如果因子與收益負相關，則根據因子值由大到小排名
+    ranked_df[rank_result_column] = ranked_df.groupby(level="datetime")[
+        rank_column
+    ].rank(ascending=positive_corr)
+    ranked_df = ranked_df.fillna(0)
+    ranked_df.reset_index(inplace=True)
+    return ranked_df
+
+def calculate_weighted_rank(
+    ranked_dfs: Annotated[
+        list[pd.DataFrame],
+        "多個包含因子排名資料表的列表",
+        "欄位名稱含asset(股票代號)、datetime(日期)、value(因子值欄位)、rank(排序結果欄位)",
+    ],
+    weights: Annotated[list[float], "對應於各因子權重的列表"],
+    positive_corr: Annotated[bool, "因子與收益相關性的列表，正相關為True，負相關為False"],
+    rank_column: Annotated[str, "用於排序的欄位名稱"],
+) -> Annotated[
+    pd.DataFrame,
+    "包含加權排序結果的資料表",
+    "欄位名稱含asset(股票代碼)、datetime(日期)和加權排名結果(weighted_rank)"
+]:
+    """
+    函式說明：
+    根據多個因子的加權排名計算最終的股票排名。
+    len(ranked_dfs) 會等於 len(weights)
+    """
+    # 檢查 ranked_dfs 和 weights 的長度是否相同，否則拋出錯誤
+    # 也就是有 n 個因子資料就需要有 n 個權重值
+    if len(ranked_dfs) != len(weights):
+        raise ValueError("ranked_dfs 和 weights 的長度必須相同。")
+    # 初始化 combined_ranks 為空的 Dataframe，用來儲存加權後的排名結果
+    combined_ranks = pd.DataFrame()
+    # 遍歷每個因子排名資料表及其對應的權重
+    for i, df in enumerate(ranked_dfs):
+        # 將每個因子的排名乘以對應的權重，並存入新的欄位 rank_i
+        df[f"rank_{i}"] = df[rank_column] * weights[i]
+        if combined_ranks.empty:
+            combined_ranks = df[["datetime", "asset", f"rank_{i}"]]
+        else:
+            # 根據 datetime 和 asset 這兩個欄位將資料進行合併
+            combined_ranks = pd.merge(
+                combined_ranks,
+                df[["datetime", "asset", f"rank_{i}"]],
+                on=["datetime", "asset"],
+                how="outer",
+            )
+    # 將合併後的資料中遺失的值刪除
+    combined_ranks = combined_ranks.dropna()
+    # 最後，將所有乘上權重的排名進行每個股票每日的加總，得到最終的加權排名結果
+    combined_ranks["weighted"] = combined_ranks.filter(like="rank_").sum(axis=1)
+    # 根據加權總分計算最終的股票排名
+    ranked_df = rank_stocks_by_factor(
+        factor_df=combined_ranks,
+        positive_corr=positive_corr,
+        rank_column="weighted",
+        rank_result_column="weighted_rank",
+    )
+    return ranked_df[['datetime', 'asset', 'weighted_rank']]
