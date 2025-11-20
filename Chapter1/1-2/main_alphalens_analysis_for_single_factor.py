@@ -30,7 +30,7 @@ top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
 )
 print(f"列出市值前 10 大的股票代號：{ top_N_stocks[:10] }")
 print(f"股票數量：{len(top_N_stocks)}")  # 757
-# 獲取指定股票代碼列表在給定日期範圍內的美日收盤價資料。
+# 獲取指定股票代碼列表在給定日期範圍內的每日收盤價資料。
 close_price_data = chap1_utils.get_daily_close_prices_data(
     stock_symbols=top_N_stocks,
     start_date=analysis_period_start_date,
@@ -39,7 +39,7 @@ close_price_data = chap1_utils.get_daily_close_prices_data(
 close_price_data.head()
 print(f"股票代碼（欄位名稱）：{close_price_data.columns}")
 print(f"日期（索引）：{close_price_data.index}")
-# 針對市值前 300 大的股票，獲取指定因子（營業利益）的資料，並根據美日的交易日將因子資料擴展成日頻資料。
+# 針對市值前 300 大的股票，獲取指定因子（營業利益）的資料，並根據每日的交易日將因子資料擴展成日頻資料。
 factor_data = chap1_utils.get_factor_data(
     stock_symbols=top_N_stocks,
     factor_name="營業利益",
