@@ -42,10 +42,14 @@ pos_corr_factors = [
 # 從 FinLab 取得多因子資料，並將這些資料儲存在 factors_data_dict 字典中，字典的鍵是因子名稱，值是對應的因子資料。
 factors_data_dict = {}
 for factor in pos_corr_factors:
-    factor_data = chap1_utils.get_factor_data(
-        stock_symbols=top_N_stocks,
-        factor_name=factor,
-        trading_days=list(close_price_data.index),
+    factor_data = (
+        chap1_utils.get_factor_data(
+            stock_symbols=top_N_stocks,
+            factor_name=factor,
+            trading_days=list(close_price_data.index),
+        )
+        .reset_index()
+        .assign(factor_name=factor)
     )
     factors_data_dict[factor] = factor_data
 # 根據各個因子（欄位：value）對股票進行排序，排序後的結果存儲在 ranked_factors_data_dict 字典中，字典的鍵是因子名稱，值為排名結果。
@@ -59,10 +63,10 @@ for factor in factors_data_dict:
     )
 
 # 根據多個因子的排名和對應的權重，計算加權排名後．再依據加權排名結果將將股票進行排序， combined_df_dict 用來儲存每個五因子組合排續結果。
-pos_corr_factors = list(combinations(pos_corr_factors, 5))
+pos_corr_factor_pair = list(combinations(pos_corr_factors, 5))
 print(f"總計有 {len(pos_corr_factors)} 組五因子組合")
-
 combined_df_dict = {}
+
 for pair in pos_corr_factor_pair:
     combined_df_dict[pair] = chap1_utils.calculate_weighted_rank(
         ranked_dfs=[
@@ -71,7 +75,6 @@ for pair in pos_corr_factor_pair:
             rank_factors_data_dict[pair[2]],
             rank_factors_data_dict[pair[3]],
             rank_factors_data_dict[pair[4]],
-            rank_factors_data_dict[pair[5]],
         ],
         weights=[0.2, 0.2, 0.2, 0.2, 0.2], # 等權重
         positive_corr=True,

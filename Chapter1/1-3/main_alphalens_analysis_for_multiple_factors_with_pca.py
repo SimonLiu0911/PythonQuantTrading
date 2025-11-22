@@ -60,6 +60,7 @@ for factor in all_factors_list:
 # 將所有因子資料合併成一個 DataFrame
 concat_factors_data = pd.concat(factors_data_dict.values(), ignore_index=True)
 # 將資料格式轉換為索引是 datetime 和 asset，欄位名稱是因子名稱
+# pivot_table 用於將長格式的資料展開轉換為寬格式
 concat_factors_data = concat_factors_data.pivot_table(
     index=["datetime", "asset"],
     columns="factor_name",
