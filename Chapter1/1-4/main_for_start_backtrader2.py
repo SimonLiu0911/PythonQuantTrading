@@ -111,8 +111,8 @@ class OpenCloseStrategy(bt.strategy):
     def notify_trade(self, trade):
         """交易通知處理"""
         if trade.isclosed:  # 交易結束時
-            trade_pnl = np.round(trade_pnl, 2)
-            trade_pnlcomm = np.round(trade_pnlcomm, 2)
+            trade_pnl = np.round(trade.pnl, 2)
+            trade_pnlcomm = np.round(trade.pnlcomm, 2)
             self.log(f"考慮手續費利潤：{trade_pnlcomm}")
             self.log(f"不考慮手續費利潤：{trade_pnl}")
 
@@ -139,7 +139,7 @@ data = bt.feeds.GenericCSVData(
     close=4,  # 設定 close 欄位的位置
     volume=5,  # 設定 volume 欄位的位置
     openinterest=-1,  # 設定 open interest 欄位，這裡不使用所以設為-1
-    dtformat=("%Y-%m-%d"),  # 指定日期格式
+    dtformat=("%Y/%m/%d"),  # 指定日期格式，原始資料為 2020/1/2
 )
 
 cerebro = bt.Cerebro()  # 初始化回測引擎
