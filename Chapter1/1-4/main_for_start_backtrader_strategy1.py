@@ -1,0 +1,59 @@
+"""範例策略一：印出教日當天和前一天的開盤價和收盤價"""
+
+import backtrader as bt
+import numpy as np
+
+# 定義一個策略類別，印出交易日當天和前一天的開盤價和收盤價
+
+class PrintDataStrategy(bt.Strategy):
+    # next 方法會在每個時間點被執行
+    def next(self):
+        # self.datas[0] 代表第一個數據集（即第一隻股票）
+        date = self.datas[0].datetime.date(0)  # 取得當前交易日的日期
+        close = self.datas[0].close[0]  # 取得當前交易日的收盤價
+        open = self.datas[0].open[0]  # 取得當前交易日的開盤價
+        # len(self.datas[0]) 對應當前是第幾個交易日
+        # 隨著每個交易日的進行，len(self.datas[0]) 會不斷增加
+        # 每當 next() 方法被調用時，len(self.datas[0]) 會+1
+        print(
+            f"Day-{len(self.datas[0])}, "
+            + f"Date: {date}, "
+            + f"Close: {close}, "
+            + f"Open: {open}, "
+        )
+        
+        # 檢查數據集中是否有前一天的資料
+        # 這個檢查是為了避免存取不存在的前一天資料
+        if len(self.datas[0]) > 1:
+            # 索引 [-1] 表示前一個時間點的數據
+            # 取得前一個交易日的日期、收盤價和開盤價
+            yesterday_date = self.datas[0].datetime.date(-1)
+            yesterday_close = self.datas[0].close[-1]
+            yesterday_open = self.datas[0].open[-1]
+            print(
+                f"Yesterday Date: {yesterday_date}, "
+                + f"Close: {yesterday_close}, "
+                + f"Open: {yesterday_open}"
+            )
+            print("----")
+
+data = bt.feeds.GenericCSVData(
+    dataname="Chapter1/1-4/stock_data_examples.csv",
+    datetime=0,
+    open=1,
+    high=2,
+    low=3,
+    close=4,
+    volume=5,
+    openinterest=-1,
+    dtformat=("%Y/%m/%d"),
+    headers=True,
+)
+
+cerebro = bt.Cerebro()
+cerebro.adddata(data)
+cerebro.addstrategy(PrintDataStrategy)
+results = cerebro.run()
+print(results)
+
+print("回測結束")
