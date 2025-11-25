@@ -1,11 +1,23 @@
-"""範例策略一：印出教日當天和前一天的開盤價和收盤價"""
+# %%
+"""範例策略一：印出交易日當天和前一天的開盤價和收盤價"""
 
 import backtrader as bt
-import numpy as np
+from pathlib import Path
 
 # 定義一個策略類別，印出交易日當天和前一天的開盤價和收盤價
 
 class PrintDataStrategy(bt.Strategy):
+    # 初始化方法，在策略開始時執行，用於設置指標，包含定義策略會使用到的參數
+    def __init__(self):
+        d=self.datas[0]
+        print(
+            d.datetime.date(0), # 2020-01-08
+            d.open[0], # 74.29
+            d.high[0], # 76.11
+            d.low[0], # 74.29
+            d.close[0], # 75.8
+            d.volume[0], # 132079200.0
+        )
     # next 方法會在每個時間點被執行
     def next(self):
         # self.datas[0] 代表第一個數據集（即第一隻股票）
@@ -38,7 +50,7 @@ class PrintDataStrategy(bt.Strategy):
             print("----")
 
 data = bt.feeds.GenericCSVData(
-    dataname="Chapter1/1-4/stock_data_examples.csv",
+    dataname=str(Path(__file__).parent / "stock_data_examples.csv"),
     datetime=0,
     open=1,
     high=2,
@@ -50,10 +62,10 @@ data = bt.feeds.GenericCSVData(
     headers=True,
 )
 
-cerebro = bt.Cerebro()
-cerebro.adddata(data)
-cerebro.addstrategy(PrintDataStrategy)
+cerebro = bt.Cerebro()  # 初始化回測引擎
+cerebro.adddata(data)  # 加載數據
+cerebro.addstrategy(PrintDataStrategy)  # 加載策略
 results = cerebro.run()
-print(results)
+# print(results)
 
 print("回測結束")
