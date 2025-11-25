@@ -1,5 +1,7 @@
+# %%
 """範例策略三：每月定期定額0050"""
 
+import os
 import backtrader as bt
 import numpy as np
 
@@ -44,6 +46,11 @@ import numpy as np
 
 class MonthlyInvestmentStrategy(bt.Strategy):
     # 定義策略的參數
+    """
+    params 放在類別層級才能被 Backtrader 掃描並允許外部透過 addstrategy 覆寫
+    放 __init__ 只是普通實例屬性，框架不會當成參數處理，也無法從外部傳入覆蓋。
+
+    """
     params = (
         ("cash_to_invest", 10000),  # 每月計劃投資的金額
         ("investment_day", 1),  # 每月的投資日（哪一天執行定期投資）
@@ -91,9 +98,9 @@ class MonthlyInvestmentStrategy(bt.Strategy):
     # next 是在每個交易日都會被使用的方法，但這個範例中不做任何事，全部交由定時器控制交易
     def next(self):
         pass
-
+current_folder = os.path.dirname(__file__)
 data = bt.feeds.GenericCSVData(
-    dataname="Chapter1/1-4/stock_data_examples.csv",
+    dataname=os.path.join(current_folder, "stock_data_examples.csv"),
     datetime=0,
     open=1,
     high=2,
@@ -110,4 +117,4 @@ cerebro.adddata(data)  # 加載數據
 cerebro.addstrategy(MonthlyInvestmentStrategy)  # 加載策略
 cerebro.broker.setcash(100000)  # 設置初始資金
 cerebro.broker.setcommission(commission=0.0015)  # 設置交易手續費
-results = cerebro.run()  # 執行回測
+cerebro.run()  # 執行回測
