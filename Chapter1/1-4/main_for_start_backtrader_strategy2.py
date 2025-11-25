@@ -1,5 +1,6 @@
+# %%
 """範例策略二：收盤價小於開盤價時買入，收盤價高於開盤價時賣出"""
-
+import os
 import backtrader as bt
 import numpy as np
 
@@ -13,6 +14,7 @@ import numpy as np
 
 class OpenCloseStrategy(bt.Strategy):
     def __init__(self):
+        """設置指標，包含定義策略會使用到的參數"""
         self.order = None  # 初始化訂單狀態為 None，訂單狀態會隨著交易變更
         self.close = self.datas[0].close  # 取得第一個數據集的收盤價
         self.open = self.datas[0].open  # 取得第一個數據集的開盤價資料
@@ -24,6 +26,7 @@ class OpenCloseStrategy(bt.Strategy):
         print(f"{dt.isoformat()} {txt}")
 
     def notify_order(self, order):
+        """追蹤訂單的狀態，「訂單狀態」變化時自動觸發。訂單狀態包含了提交、接受、完成、取消、拒絕等狀態"""
         if order.status in [order.Submitted]:
             self.log("訂單已成交")
         if order.status in [order.Accepted]:
@@ -59,6 +62,7 @@ class OpenCloseStrategy(bt.Strategy):
             self.log(f"不考慮手續費利潤：{trade_pnl}")
 
     def next(self):
+        """定義交易策略邏輯的函式"""
         today_open = np.round(self.open[0], 2)
         today_close = np.round(self.close[0], 2)
         self.log(f"當前收盤價：{today_close}, 當前開盤價：{today_open}")
@@ -72,8 +76,9 @@ class OpenCloseStrategy(bt.Strategy):
             self.log("收盤價大於開盤價，執行賣出")
 
 # 加載數據
+current_folder = os.path.dirname(__file__)
 data = bt.feeds.GenericCSVData(
-    dataname="Chapter1/1-4/stock_data_examples.csv",  # 指定 CSV 檔案的路徑
+    dataname=os.path.join(current_folder, "stock_data_examples.csv"),  # 指定 CSV 檔案的路徑
     datetime=0,  # 設定 datetime 欄位的位置
     open=1,  # 設定 open 欄位的位置
     high=2,  # 設定 high 欄位的位置
