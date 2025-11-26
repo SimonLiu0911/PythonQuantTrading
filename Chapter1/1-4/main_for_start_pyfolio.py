@@ -1,4 +1,3 @@
-# %%
 import backtrader as bt
 import pyfolio as pf
 import yfinance as yf
@@ -6,9 +5,12 @@ import yfinance as yf
 # 分析台積電股票的歷史價格數據，生成投資收益報表
 # 取得 2015/1/1 ~ 2023/12/31 的台積電股票數據
 
-stock_data = yf.download("2330.TW", start="2015-01-01", end="2023-12-31").droplevel(
-    "Ticker", axis=1
-)
+stock_data = yf.download(
+    "2330.TW",
+    start="2015-01-01",
+    end="2023-12-31",
+    auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning
+).droplevel("Ticker", axis=1)
 
 # # 將股票數據的索引（日期）設置為台北時間
 # stock_data.index = stock_data.index.tz_localize("Asia/Taipei")
@@ -19,9 +21,12 @@ pf.create_returns_tear_sheet(pct_change_close_data)
 
 # 將台積電的表現與追蹤大盤指數的 ETF 作比較，生成投資收益表
 # 取得 0050 ETF 從 2015/1/1 ~ 2023/12/31 的數據
-benchmark_data = yf.download("0050.TW", start="2015-01-01", end="2023-12-31").droplevel(
-    "Ticker", axis=1
-)
+benchmark_data = yf.download(
+    "0050.TW",
+    start="2015-01-01",
+    end="2023-12-31",
+    auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning
+).droplevel("Ticker", axis=1)
 
 # # 將股票數據的索引（日期）設置為台北時間
 # benchmark_data.index = benchmark_data.index.tz_localize("Asia/Taipei")
@@ -61,9 +66,12 @@ class MonthlyInvestmentStrategy(bt.Strategy):
 
 cerebro = bt.Cerebro()
 data = bt.feeds.PandasData(
-    dataname=yf.download("0050.TW", "2015-01-01", "2023-12-31").droplevel(
-        "Ticker", axis=1
-    )
+    dataname=yf.download(
+        "0050.TW",
+        "2015-01-01",
+        "2023-12-31",
+        auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning
+    ).droplevel("Ticker", axis=1)
 )
 
 cerebro.adddata(data)

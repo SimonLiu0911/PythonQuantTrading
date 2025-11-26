@@ -295,7 +295,9 @@ def rank_stocks_by_factor(
         "因子資料表",
         "欄位名稱含asset(股票代碼欄位)、datetime(日期欄位)、value(因子值欄位)",
     ],
-    positive_corr: Annotated[bool, "因子與股價變動是否正相關，正相關為True，負相關為False"],
+    positive_corr: Annotated[
+        bool, "因子與股價變動是否正相關，正相關為True，負相關為False"
+    ],
     rank_column: Annotated[str, "用於排序的欄位名稱"],
     rank_result_column: Annotated[str, "保存排序結果的欄位名稱"] = "rank",
 ) -> Annotated[
@@ -323,6 +325,7 @@ def rank_stocks_by_factor(
     ranked_df.reset_index(inplace=True)
     return ranked_df
 
+
 def calculate_weighted_rank(
     ranked_dfs: Annotated[
         list[pd.DataFrame],
@@ -330,12 +333,14 @@ def calculate_weighted_rank(
         "欄位名稱含asset(股票代號)、datetime(日期)、value(因子值欄位)、rank(排序結果欄位)",
     ],
     weights: Annotated[list[float], "對應於各因子權重的列表"],
-    positive_corr: Annotated[bool, "因子與收益相關性的列表，正相關為True，負相關為False"],
+    positive_corr: Annotated[
+        bool, "因子與收益相關性的列表，正相關為True，負相關為False"
+    ],
     rank_column: Annotated[str, "用於排序的欄位名稱"],
 ) -> Annotated[
     pd.DataFrame,
     "包含加權排序結果的資料表",
-    "欄位名稱含asset(股票代碼)、datetime(日期)和加權排名結果(weighted_rank)"
+    "欄位名稱含asset(股票代碼)、datetime(日期)和加權排名結果(weighted_rank)",
 ]:
     """
     函式說明：
@@ -373,4 +378,63 @@ def calculate_weighted_rank(
         rank_column="weighted",
         rank_result_column="weighted_rank",
     )
-    return ranked_df[['datetime', 'asset', 'weighted_rank']]
+    return ranked_df[["datetime", "asset", "weighted_rank"]]
+
+
+def convert_quarter_to_dates(
+    quarter: Annotated[str, "年-季度字串，例如：2013-Q1"],
+) -> Annotated[Tuple[str, str], "季度對應的起始和結束日期字串"]:
+    """
+    函式說明：
+    將季度字串(quarter)轉換為起始和結束日期字串。
+    ex: 2013-Q1 -> 2013-05-16, 2013-08-14。
+    """
+    year, qtr = quarter.split("-")
+    if qtr == "Q1":
+        return f"{year}-05-16", f"{year}-08-14"
+    if qtr == "Q2":
+        return f"{year}-08-15", f"{year}-11-14"
+    if qtr == "Q3":
+        return f"{year}-11-15", f"{int(year) + 1}-03-31"
+    if qtr == "Q4":
+        return f"{int(year) + 1}-04-01", f"{int(year) + 1}-05-15"
+
+
+# def get_daily_price_and_volume_data(
+def get_daily_OHLCV_data(
+    stock_symbols: Annotated[list[str], "股票代碼列表"],
+    start_date: Annotated[str, "起始日期", "YYYY-MM-DD"],
+    end_date: Annotated[str, "結束日期", "YYYY-MM-DD"],
+    is_tw_stock: Annotated[bool, "stock_symbols 是否是台灣股票"] = True,
+) -> Annotated[pd.DataFrame, "價量的資料集", "欄位名稱包含股票代碼、日期、開高低收量"]:
+    """
+    函式說明：
+    取得指定股票(stock_symbols)在給定日期範圍內(stock_date ~ end_date)的美日價量資料。
+    """
+    # 如果是台灣股票，則在股票代碼後加上".TW"
+    if is_tw_stock:
+        stock_symbols = [
+            f"{symbol}.TW" if ".TW" not in symbol else symbol
+            for symbol in stock_symbols
+        ]
+    # 使用 pd.concat 合併多隻股票的數據
+    all_stock_data = pd.concat(
+        [
+            # 從 YFinance 下載每隻股票在指定日期範圍內的數據
+            pd.DataFrame(yf.download(symbol, start=start_date, end=end_date)).droplevel(
+                "Ticker", axis=1
+            )
+            # 新增一個 "asset" 的欄位，用來儲存股票代碼
+            .assign(asset=symbol.split(".")[0])
+            # 重設索引並將日期欄位名稱從 Date 改為 datetime
+            .reset_index().rename(columns={"Date": "datetime"})
+            # 使用向前填補的方法處理資料中的遺失值
+            .ffill()
+            for symbol in stock_symbols
+        ]
+    )
+    all_stock_data.columns.name = None
+    all_stock_data = all_stock_data[
+        ["Open", "High", "Low", "Close", "Volume", "datetime", "asset"]
+    ]
+    return all_stock_data.reset_index(drop=True)
