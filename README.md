@@ -100,6 +100,25 @@ Backtrader 的對應關係:
 7: Margin
 8: Rejected
 
+### Backtrader 內建常用的指標函式使用範例
+簡單移動平均(SMA):
+bt.indicators.SimpleMovingAverage(self.data.close.period=20)
+
+指數移動平均(EMA):
+bt.indicators.ExponentialMovingAverage(self.data.close, period=20)
+
+相對強弱指數(RSI):
+bt.indicators.RSI(self.data.close, period=14)
+
+指數平滑異同移動平均(MACD):
+bt.indicators.MACD(self.data.close, period_me1=12, period_me=2, period_singl=9)
+
+布林帶(Bollinger Bands):
+bt.indicators.BollingerBands(self.data.close, period=20, devfactor=2.0)
+
+動量指標(Momentum):
+bt.indicators.Momentum(self.data.close, period=12)
+
 ### 
 收益 Return：
 收益涵蓋了幾個關鍵指標，例如：每日收益(returns)、每月收益(Monthly returns)、年化收益(Annual returns)和累積收益(Cumulative returns)。這些指標幫助我們從不同的時間維度去了解策略的表現。(P1-134)

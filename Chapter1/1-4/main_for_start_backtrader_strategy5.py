@@ -1,4 +1,6 @@
 """範例策略五：RSI過度買下/賣出策略"""
+# 相對強弱指數(RSI):
+# bt.indicators.RSI(self.data.close, period=14)
 import backtrader as bt
 import numpy as np
 import yfinance as yf
@@ -12,6 +14,7 @@ class RSIStrategy(bt.Strategy):
     params = (("rsi_period", 14), ("rsi_low", 30), ("rsi_high", 70))
     def __init__(self):
         # 使用參數中設定的 rsi_period 來計算 RSI
+        # self.rsi = bt.indicators.RSI(self.data.close, period=self.params.rsi_period)
         self.rsi = bt.indicators.RelativeStrengthIndex(period=self.params.rsi_period)
         # 初始化訂單狀態，用來追蹤當前的訂單
         self.order = None
@@ -38,7 +41,6 @@ class RSIStrategy(bt.Strategy):
                 self.log(f"訂單完成：買入執行，價格：{executed_price}，手續費：{executed_comm}")
             elif order.issell():
                 self.log(f"訂單完成：賣出執行，價格：{executed_price}，手續費：{executed_comm}")
-
 cerebro = bt.Cerebro()
 cerebro.addstrategy(RSIStrategy)
 asset = "0050.TW"
