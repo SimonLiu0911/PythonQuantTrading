@@ -7,8 +7,8 @@ import yfinance as yf
 class RSIStrategy(bt.Strategy):
     # 定義策略的參數：rsi_period, rsi_low, rsi_high
     # rsi_period: RSI 的計算週期，預設為 14 天
-    # rsi_low: 當 RSI 低於此數值時進行買入，預設為 30
-    # rsi_high: 當 RSI 高於此數值時進行賣出，預設為 70
+    # rsi_low: 當 RSI 低於此數值時進行買入，預設為 30（視為「超賣」，策略準備 買進。）
+    # rsi_high: 當 RSI 高於此數值時進行賣出，預設為 70（視為「超買」，策略準備 賣出 / 平倉。）
     params = (("rsi_period", 14), ("rsi_low", 30), ("rsi_high", 70))
     def __init__(self):
         # 使用參數中設定的 rsi_period 來計算 RSI
@@ -31,7 +31,7 @@ class RSIStrategy(bt.Strategy):
         print(f"{dt.isoformat()} {txt}")
     def notify_order(self, order):
         """訂單通知處理"""
-        if order.status in [order.Completed]:
+        if order.status in [order.Completed]:  # if order.status == order.Completed:
             executed_price = np.round(order.executed.price, 3)
             executed_comm = np.round(order.executed.comm, 3)
             if order.isbuy():
