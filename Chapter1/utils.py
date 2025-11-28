@@ -409,7 +409,7 @@ def get_daily_OHLCV_data(
 ) -> Annotated[pd.DataFrame, "價量的資料集", "欄位名稱包含股票代碼、日期、開高低收量"]:
     """
     函式說明：
-    取得指定股票(stock_symbols)在給定日期範圍內(stock_date ~ end_date)的美日價量資料。
+    取得指定股票(stock_symbols)在給定日期範圍內(stock_date ~ end_date)的每日價量資料。
     """
     # 如果是台灣股票，則在股票代碼後加上".TW"
     if is_tw_stock:

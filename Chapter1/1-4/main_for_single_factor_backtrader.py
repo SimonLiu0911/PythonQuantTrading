@@ -5,9 +5,12 @@ import backtrader as bt
 import pandas as pd
 import pyfolio as pf
 
-project_root = Path(__file__).resolve().parents[2]
-if str(project_root) not in sys.path:
-    sys.path.append(str(project_root))
+# project_root = Path(__file__).resolve().parents[2]
+# if str(project_root) not in sys.path:
+#     sys.path.append(str(project_root))
+
+utils_folder_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(utils_folder_path)
 
 from Chapter1 import utils as chap1_utils # 這是讀取 Chapter1 下面的 utils
 
@@ -26,12 +29,13 @@ top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
     pre_list_date="2017-01-03",
 )
 
-# 取得指定股票代碼列表在給定日期範圍內的每日 OHLCV 數據
+# 取得指定股票代碼列表在給定日期範圍內的每日 OHLCV 數據(get_daily_price_and_volume_data)
 all_stock_data = chap1_utils.get_daily_OHLCV_data(
     stock_symbols=top_N_stocks,
     start_date=analysis_period_start_date,
     end_date=analysis_period_end_date,
 )
+print(all_stock_data)
 all_stock_data["datetime"] = all_stock_data["datetime"].astype(str)
 all_stock_data["asset"] = all_stock_data["asset"].astype(str)
 # 指定各個季度下要使用來排序的因子
@@ -57,6 +61,9 @@ select_rank_factor_dict = {
 }
 # 準備因子數據，將個季度的因子數據進行排序。
 all_factor_data = pd.DataFrame()
+
+print(11111, all_factor_data)
+print(22222, all_stock_data)
 for quarter, factor in select_rank_factor_dict.items():
     # 將季度字串轉換為起始和結束日期
     start_date, end_date = chap1_utils.convert_quarter_to_dates(quarter)
@@ -117,6 +124,58 @@ class PanadasDataWithRank(bt.feeds.PandasData):
 # 定義策略：根據因子排名買入和賣出股票
 class FactorRankStrategy(bt.Strategy):
     pass # 請參考前面內容
+    # ////
+    # params = dict(buy_n=20, sell_n=20, each_cash=100000)
+
+    # def __init__(self):
+    #     self.last_rebalance = None  # 上次進行調倉的日期(None代表未調倉)
+
+    # def next(self):
+    #     current_date = self.datas[0].datetime.date(0)
+    #     # 每月第一次交易日才重新調倉，避免每天重複下單
+    #     if self.last_rebalance and (
+    #         self.last_rebalance.year == current_date.year
+    #         and self.last_rebalance.month == current_date.month
+    #     ):
+    #         return
+        
+    #     self.last_rebalance = current_date
+
+    #     ranked = []
+    #     for data in self.datas:
+    #         rank = data.rank[0]
+    #         if pd.isna(rank):
+    #             continue
+    #         ranked.append((rank, data))
+    #     if not ranked:
+    #         return
+    #     ranked.sort(key=lambda x: x[0])  # rank 值愈小代表排名愈前面
+
+    #     top_to_hold = {d._name for _, d in ranked[: self.p.buy_n]}
+
+    #     # 先賣出：持有但不在前 buy_n，且位於最末的 sell_n 名
+    #     held_with_rank = [
+    #         (data.rank[0], data)
+    #         for data in self.datas
+    #         if self.getposition(data).size != 0 and not pd.isna(data.rank[0])
+    #     ]
+    #     held_with_rank.sort(key=lambda x: x[0], reverse=True)  # 排名越大越差
+    #     for rank, data in held_with_rank[: self.p.sell_n]:
+    #         if data._name not in top_to_hold:
+    #             self.close(data=data)
+
+    #     # 再買入：補齊前 buy_n 名中尚未持有的股票
+    #     for _, data in ranked[: self.p.buy_n]:
+    #         if self.getposition(data).size != 0:
+    #             continue
+    #         price = data.close[0]
+    #         if price <= 0:
+    #             continue
+    #         size = int(self.p.each_cash / price)
+    #         if size <= 0:
+    #             continue
+    #         self.buy(data=data, size=size)
+    # ////
 
 # 設定回測引擎
 cerebro = bt.Cerebro()
