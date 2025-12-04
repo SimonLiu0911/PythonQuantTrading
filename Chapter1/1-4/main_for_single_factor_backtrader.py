@@ -16,7 +16,7 @@ from Chapter1 import utils as chap1_utils # 這是讀取 Chapter1 下面的 util
 
 chap1_utils.finlab_login()
 
-analysis_period_start_date = "2017-05-16"
+analysis_period_start_date = "2021-03-16"
 analysis_period_end_date = "2021-05-15"
 
 top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
@@ -193,6 +193,9 @@ for stock in stock_list:
     data = data.drop(columns=["asset", "factor_name"])  # 移除不必要欄位
     data["datetime"] = pd.to_datetime(data["datetime"])  # 日期欄位轉為 datetime 格式
     data = data.dropna().sort_values(by=["datetime"]).reset_index(drop=True)
+    if data.empty:
+        # 無資料的股票不加入，避免 backtrader 在分析器階段索引越界
+        continue
     data = PanadasDataWithRank(dataname=data)  # 使用自訂的數據格式 PanadasDataWithRank
     cerebro.adddata(data, name=stock)  # 加入數據到回測引擎
 
@@ -214,4 +217,4 @@ pyfoliozer = strat.analyzers.getbyname("pyfolio")
     gross_lev,
 ) = pyfoliozer.get_pf_items()
 # 使用 PyFolio 生成完整的投資組合表現分析報告
-pf.create_full_teat_sheet(returns)
+pf.create_full_tear_sheet(returns)

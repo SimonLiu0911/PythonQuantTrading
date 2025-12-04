@@ -43,6 +43,7 @@ def get_top_stocks_by_market_value(
     ]
     # 如果有指定要拍廚的產業類別，則過濾掉這些產業的公司
     if excluded_industry:
+        # 只保留「產業類別」不在 excluded_industry 裡的列，"~"是取反的意思
         company_info = company_info[~company_info["產業類別"].isin(excluded_industry)]
     # 如果有設定上市日期條件，則過濾掉上市日期晚於指定日期的公司
     if pre_list_date:
