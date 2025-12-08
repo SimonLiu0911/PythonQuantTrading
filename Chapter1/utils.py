@@ -92,6 +92,14 @@ def get_daily_close_prices_data(
     """
     # 如果是台灣股票，則在每個股票代碼後加上".TW"
     if is_tw_stock:
+        # new_symbols = []
+        # for symbol in stock_symbols:
+        #     if ".TW" not in symbol:
+        #         new_symbols.append(f"{symbol}.TW")
+        #     else:
+        #         new_symbols.append(symbol)
+        # stock_symbols = new_symbols
+        # Optimize
         stock_symbols = [
             f"{symbol}.TW" if ".TW" not in symbol else symbol
             for symbol in stock_symbols
@@ -105,6 +113,7 @@ def get_daily_close_prices_data(
     # 使用向前填補方法處理資料中遺失值
     stock_data = stock_data.ffill()
     # 將欄位名稱中的 ".TW" 移除，只保留股票代碼
+    print(stock_data.columns) # 1101.TW    1102.TW    1103.TW    1104.TW    1108.TW    1109.TW  ...
     stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
     return stock_data
 
@@ -146,6 +155,7 @@ def get_daily_close_prices_data(
 #             .sort_values(by=["datetime", "asset"])
 #             .set_index(["datetime", "asset"])
 #         )
+
 #     return factor_data
 
 
@@ -161,6 +171,11 @@ def get_factor_data(
 ]:
     """
     從 FinLab 取得指定因子，選出目標股票；若指定 trading_days，則擴展為交易日頻率並長表化。
+    備註：
+    finlab.data.get(dataset)
+        時間序列資料
+        資料獲取方法，就是使用 data.get 函式，傳入：主資料:子資料 的格式，例如price:收盤價。 獲得的資料，其縱軸為日期，橫軸為股票代號，製作選股策略非常方便。
+        data.get('price:收盤價')
     """
     # 1) 讀因子（假設回傳的是 pandas.DataFrame，index=財報日，columns=股票代碼）
     factor_data = data.get(f"fundamental_features:{factor_name}").deadline()
@@ -170,13 +185,13 @@ def get_factor_data(
     cols = pd.Index(factor_data.columns).astype(str).str.strip()
 
     # 若你的欄名帶後綴（例如 '.TW'），去掉再比對（必要時打開）
-    # cols = cols.str.replace(r"\.TW$", "", regex=True)
+    cols = cols.str.replace(r"\.TW$", "", regex=True)
 
     factor_data.columns = cols
 
     # 3) 選股：用 reindex 保留順序；缺失者補 NaN 並提出警告（不會拋 KeyError）
     if stock_symbols:
-        want = pd.Index(stock_symbols).astype(str).str.strip()
+        want = pd.Index(stock_symbols).astype(str).str.strip()  # str.strip()去調前後空白
         # 若需要補零至 4 碼（像 '9103'），可加： want = want.str.zfill(4)
 
         missing = want.difference(factor_data.columns)
@@ -192,7 +207,7 @@ def get_factor_data(
         return factor_data
 
     # 5) 轉為交易日頻率：用 DatetimeIndex 對齊 + ffill（建議的 extend 寫法）
-    #    你的 extend_factor_data 也可以用，但 reindex 更簡潔、效能好
+    #    extend_factor_data 也可以用，但 reindex 更簡潔、效能好
     #    先整理索引與交易日
     factor_data = factor_data.sort_index()
     td = pd.DatetimeIndex(pd.to_datetime(list(trading_days))).unique().sort_values()
