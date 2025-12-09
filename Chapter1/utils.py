@@ -318,14 +318,14 @@ def rank_stocks_by_factor(
     rank_result_column: Annotated[str, "保存排序結果的欄位名稱"] = "rank",
 ) -> Annotated[
     pd.Dateframe,
-    "包含排序結果的因子資料表",
+    "包含排序結果的資料表",
     "欄位名稱含asset(股票代碼欄位)、datetime(日期欄位)、value(因子值欄位)、rank(排序結果欄位)",
 ]:
     """
     函式說明：
     根據某個指定因子的值(rank_column)對股票進行排序，遞增或遞減排序方式取決於因子與未來收益的相關性(positive_corr)。
-    如果相關性為正，則將股票案因子值由小到大排序；如果相關性為負，則將股票按因子值由大到小排序。
-    最後，將排序結果新增至原因子資料表中，且指定排序結果欄位名稱為 rank_result_column。
+    如果相關性為正，則將股票按因子值由小到大排序；如果相關性為負，則將股票按因子值由大到小排序。
+    最後，將排序結果新增至原始因子資料表中，且指定排序結果欄位名稱為 rank_result_column。
     """
     # 複製因子資料表，以避免對原資料進行修改
     ranked_df = factor_df.copy()
@@ -383,11 +383,12 @@ def calculate_weighted_rank(
                 on=["datetime", "asset"],
                 how="outer",
             )
-    # 將合併後的資料中遺失的值刪除
+    # 將合併後的資料中遺失值刪除
     combined_ranks = combined_ranks.dropna()
     # 最後，將所有乘上權重的排名進行每個股票每日的加總，得到最終的加權排名結果
     combined_ranks["weighted"] = combined_ranks.filter(like="rank_").sum(axis=1)
     # 根據加權總分計算最終的股票排名
+    # 使用 rank_stocks_by_factor 函數對加權排名結果進行排序
     ranked_df = rank_stocks_by_factor(
         factor_df=combined_ranks,
         positive_corr=positive_corr,

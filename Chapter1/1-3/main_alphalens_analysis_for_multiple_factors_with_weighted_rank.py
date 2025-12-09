@@ -1,3 +1,4 @@
+# %%
 import os, sys
 from itertools import combinations
 from alphalens.tears import create_full_tear_sheet
@@ -5,6 +6,7 @@ from alphalens.utils import get_clean_factor_and_forward_returns
 
 utils_folder_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(utils_folder_path)
+
 from Chapter1 import utils as chap1_utils
 
 chap1_utils.finlab_login()
@@ -39,7 +41,7 @@ pos_corr_factors = [
     "稅前淨利成長率",
     "稅後淨利成長率",
 ]
-# 從 FinLab 取得多因子資料，並將這些資料儲存在 factors_data_dict 字典中，字典的鍵是因子名稱，值是對應的因子資料。
+# 從 FinLab 取得多個因子資料，並將這些資料儲存在 factors_data_dict 字典中，字典的鍵是因子名稱，值是對應的因子資料。
 factors_data_dict = {}
 for factor in pos_corr_factors:
     factor_data = (
@@ -52,7 +54,7 @@ for factor in pos_corr_factors:
         .assign(factor_name=factor)
     )
     factors_data_dict[factor] = factor_data
-# 根據各個因子（欄位：value）對股票進行排序，排序後的結果存儲在 ranked_factors_data_dict 字典中，字典的鍵是因子名稱，值為排名結果。
+# 根據各個因子（欄位：value）對股票進行排序，排序後的結果存放在 ranked_factors_data_dict 字典中，字典的鍵是因子名稱，值為排名結果。
 rank_factors_data_dict = {}
 for factor in factors_data_dict:
     rank_factors_data_dict[factor] = chap1_utils.rank_stocks_by_factor(
@@ -62,11 +64,12 @@ for factor in factors_data_dict:
         rank_result_column="rank",
     )
 
-# 根據多個因子的排名和對應的權重，計算加權排名後．再依據加權排名結果將將股票進行排序， combined_df_dict 用來儲存每個五因子組合排續結果。
+# 根據多個因子的排名和對應的權重，計算加權排名後．再依據加權排名結果將股票進行排序
 pos_corr_factor_pair = list(combinations(pos_corr_factors, 5))
 print(f"總計有 {len(pos_corr_factors)} 組五因子組合")
-combined_df_dict = {}
 
+# combined_df_dict 用來儲存每個五因子組合的排續結果。
+combined_df_dict = {}
 for pair in pos_corr_factor_pair:
     combined_df_dict[pair] = chap1_utils.calculate_weighted_rank(
         ranked_dfs=[
@@ -80,6 +83,7 @@ for pair in pos_corr_factor_pair:
         positive_corr=True,
         rank_column="rank",
     ).set_index(['datetime', 'asset'])
+
 # 使用 Alphalens 進行因子分析
 for pair in combined_df_dict:
     print(f"pair: {pair}")
