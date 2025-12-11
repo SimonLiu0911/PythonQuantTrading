@@ -243,7 +243,7 @@ class YourStrategy(bt.Strategy):
   def notify_trade(self, order):
     pass
 
-在 next 韓世忠可以呼叫 self.buy() 或是 self.sell() 函式
+在 next 函式中可以呼叫 self.buy() 或是 self.sell() 函式
 
 ###### order.status 訂單狀態
 order.Submitted: 訂單已經被創建並提交到交易系統，但還沒有被處理。
@@ -252,6 +252,51 @@ order.Completed: 訂單已經成功執行買入或賣出，交易已經完成。
 order.Rejected: 訂單被拒絕。發生的原因可能是資金不足。
 
 
+
+
+
+
+
+
+
+
+"""夏普比率 Sharpe Ratio"""
+# cerebro.addanalyzer(bt.analyzers.SharpeRatio)
+# results = cerebro.run()
+# strat = results[0]
+# strat.analyzers.sharperatio.get_analysis()
+# strat.analyzers.sharperatio.get_analysis()['sharperatio']
+
+"""回撤 Drawdown"""
+# cerebro.addanalyzer(bt.analyzers.DrawDown)
+# results = cerebro.run()
+# strat = results[0]
+# strat.analyzers.drawdown.get_analysis()
+# strat.analyzers.drawdown.get_analysis()['drawdown']
+
+"""收益 Returns"""
+# cerebro.addanalyzer(bt.analyzers.Returns)
+# results = cerebro.run()
+# strat = results[0]
+# strat.analyzers.returns.get_analysis()
+
+"""Pyfolio"""
+# cerebro.addanalyzer(bt.analyzers.Pyfolio)
+# results = cerebro.run()
+# strat = results[0]
+# strat.analyzers.pyfolio.get_analysis()
+
+"""取得當前帳戶的現金餘額"""
+# cerebro.broker.getcash()
+
+"""取得當前帳戶的總額（包含現金和持倉的市值）"""
+# cerebro.broker.getvalue()
+
+"""取得持倉的價格"""
+# cerebro.broker.getposition(data).price
+
+"""取得持倉的數量"""
+# cerebro.broker.getposition(data).size
 
 
 
@@ -346,3 +391,6 @@ RSI 就是在量化這件事：
 
 ### OHLCV
 OHLCV 是金融市場中用於描述證券（如股票、加密貨幣等）在特定時間段內的交易活動的關鍵數據。它代表「開盤價 (Open)」、「最高價 (High)」、「最低價 (Low)」、「收盤價 (Close)」和「成交量 (Volume)」。這五個數據點共同繪製成圖表，例如蠟燭圖或美國線，用於分析價格走勢。 
+
+
+
