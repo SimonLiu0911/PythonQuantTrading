@@ -113,7 +113,7 @@ def get_daily_close_prices_data(
     # 使用向前填補方法處理資料中遺失值
     stock_data = stock_data.ffill()
     # 將欄位名稱中的 ".TW" 移除，只保留股票代碼
-    print(stock_data.columns) # 1101.TW    1102.TW    1103.TW    1104.TW    1108.TW    1109.TW  ...
+    # print(stock_data.columns) # 1101.TW    1102.TW    1103.TW    1104.TW    1108.TW    1109.TW  ...
     stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
     return stock_data
 
@@ -337,6 +337,7 @@ def rank_stocks_by_factor(
     ranked_df[rank_result_column] = ranked_df.groupby(level="datetime")[
         rank_column
     ].rank(ascending=positive_corr)
+    print(1111111, ranked_df)
     ranked_df = ranked_df.fillna(0)
     ranked_df.reset_index(inplace=True)
     return ranked_df
