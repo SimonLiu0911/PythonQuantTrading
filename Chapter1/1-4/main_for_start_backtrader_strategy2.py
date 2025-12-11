@@ -1,16 +1,20 @@
-# %%
 """範例策略二：收盤價小於開盤價時買入，收盤價高於開盤價時賣出"""
-import os
-import backtrader as bt
-import numpy as np
-
-# 邏輯：當收盤價低於開盤價時買入一股，當收盤價高於開盤價時，賣出一股；如果收盤價等於開盤價，則不進行操作
 
 """
+邏輯：當收盤價低於開盤價時買入一股，當收盤價高於開盤價時，賣出一股；如果收盤價等於開盤價，則不進行操作
+
+當一次完整的買賣操作完成後，會顯示這次交易所獲得的利潤。
+
+在這裡使用 self.buy() 和 self.sell() 函式來執行買賣操作。
+
 收盤價 < 開盤價 => 買入
 收盤價 > 開盤價 => 賣出
 收盤價 = 開盤價 => 無操作
 """
+# %%
+import os
+import backtrader as bt
+import numpy as np
 
 class OpenCloseStrategy(bt.Strategy):
     def __init__(self):
@@ -42,9 +46,7 @@ class OpenCloseStrategy(bt.Strategy):
             executed_comm = np.round(order.executed.comm, 3)
             if order.isbuy():
                 self.log(
-                    "訂單已完成：買入執行,"
-                    + f"價格：{executed_price}"
-                    + f"手續費：{executed_comm}"
+                    "訂單已完成：買入執行, 價格：{executed_price}, 手續費：{executed_comm}"
                 )
             elif order.issell():
                 self.log(
