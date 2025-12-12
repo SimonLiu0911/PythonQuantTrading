@@ -33,15 +33,16 @@ benchmark_data = yf.download(
 
 # # 將股票數據的索引（日期）設置為台北時間
 # benchmark_data.index = benchmark_data.index.tz_localize("Asia/Taipei")
+
 # 計算每日收盤價的百分比變動，，這代表每日的收益率
 pct_change_benchmark_close_data = benchmark_data["Close"].pct_change()
+
 # 使用 PyFolio 生成投資收益報表，將台積電績效表現與 ETF 比較
 pf.create_returns_tear_sheet(
     pct_change_close_data, benchmark_rets=pct_change_benchmark_close_data
 )
 
-
-# 定義美月定期定額策略
+# 定義每月定期定額策略
 class MonthlyInvestmentStrategy(bt.Strategy):
     params = (
         ("cash_to_invest", None),
