@@ -31,29 +31,40 @@ class OpenCloseStrategy(bt.Strategy):
         print(f"{dt.isoformat()} {txt}")
 
     def notify_order(self, order):
-        """追蹤訂單的狀態，「訂單狀態」變化時自動觸發。訂單狀態包含了提交、接受、完成、取消、拒絕等狀態"""
-        if order.status in [order.Submitted]:  # 1
+        """
+        追蹤訂單的狀態，「訂單狀態」變化時自動觸發。訂單狀態包含了提交、接受、完成、取消、拒絕等狀態
+        0: Created
+        1: Submitted
+        2: Accepted
+        3: Partial
+        4: Completed
+        5: Canceled
+        6: Expired
+        7: Margin
+        8: Rejected
+        """
+        if order.status in [order.Submitted]:
             self.log("訂單已成交")
-        if order.status in [order.Accepted]:  # 2
+        if order.status in [order.Accepted]:
             self.log("訂單已接受")
-        if order.status in [order.Canceled]:  # 5
+        if order.status in [order.Canceled]:
             self.log("訂單已取消")
-        if order.status in [order.Margin]:  # 6
+        if order.status in [order.Margin]:
             self.log("保證金不足")
-        if order.status in [order.Rejected]:  # 8
+        if order.status in [order.Rejected]:
             self.log("訂單被拒絕")
-        if order.status in [order.Completed]:  # 4
+        if order.status in [order.Completed]:
             # 把成交價(order.executed.price)用numpy.round四捨五入到小數第3位
             executed_price = np.round(order.executed.price, 3)
             executed_comm = np.round(order.executed.comm, 3)
 
             if order.isbuy():
                 self.log(
-                    "訂單已完成：買入執行, 價格：{executed_price}, 手續費：{executed_comm}"
+                    f"訂單已完成：買入執行, 價格：{executed_price}, 手續費：{executed_comm}"
                 )
             elif order.issell():
                 self.log(
-                    "訂單已完成：賣出執行, 價格：{executed_price}, 手續費：{executed_comm}"
+                    f"訂單已完成：賣出執行, 價格：{executed_price}, 手續費：{executed_comm}"
                 )
 
     def notify_trade(self, trade):

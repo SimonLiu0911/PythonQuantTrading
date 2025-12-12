@@ -1,48 +1,9 @@
-# %%
 """範例策略三：每月定期定額0050"""
 
+# %%
 import os
 import backtrader as bt
 import numpy as np
-
-"""夏普比率 Sharpe Ratio"""
-# cerebro.addanalyzer(bt.analyzers.SharpeRatio)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.sharperatio.get_analysis()
-# strat.analyzers.sharperatio.get_analysis()['sharperatio']
-
-"""回撤 Drawdown"""
-# cerebro.addanalyzer(bt.analyzers.DrawDown)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.drawdown.get_analysis()
-# strat.analyzers.drawdown.get_analysis()['drawdown']
-
-"""收益 Returns"""
-# cerebro.addanalyzer(bt.analyzers.Returns)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.returns.get_analysis()
-
-"""Pyfolio"""
-# cerebro.addanalyzer(bt.analyzers.Pyfolio)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.pyfolio.get_analysis()
-
-"""取得當前帳戶的現金餘額"""
-# cerebro.broker.getcash()
-
-"""取得當前帳戶的總額（包含現金和持倉的市值）"""
-# cerebro.broker.getvalue()
-
-"""取得持倉的價格"""
-# cerebro.broker.getposition(data).price
-
-"""取得持倉的數量"""
-# cerebro.broker.getposition(data).size
-
 
 class MonthlyInvestmentStrategy(bt.Strategy):
     # 定義策略的參數
@@ -98,6 +59,7 @@ class MonthlyInvestmentStrategy(bt.Strategy):
     # next 是在每個交易日都會被使用的方法，但這個範例中不做任何事，全部交由定時器控制交易
     def next(self):
         pass
+
 current_folder = os.path.dirname(__file__)
 data = bt.feeds.GenericCSVData(
     dataname=os.path.join(current_folder, "stock_data_examples.csv"),

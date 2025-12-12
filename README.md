@@ -250,6 +250,78 @@ order.Submitted: 訂單已經被創建並提交到交易系統，但還沒有被
 order.Accepted: 訂單已經進入了市場的處理中，但還沒有被執行。
 order.Completed: 訂單已經成功執行買入或賣出，交易已經完成。進一步可以透過 order.isbuy() 或是 order.issell() 來確認是買入還是賣出的訂單。
 order.Rejected: 訂單被拒絕。發生的原因可能是資金不足。
+order.Canceled: 訂單被取消。
+order.Margin: 當交易嘗試執行時，帳戶中可用資金或保證金不足已完成該交易。
+
+###### 訂單資訊
+order.executed.price: 訂單被執行的單價。
+order.executed.value: 訂單被執行的總價值，也就是單價乘上交易數量。
+order.executed.comm: 執行訂單產生的手續費。
+trade.pnl: 不考慮手續費下的淨盈虧。
+trade.pnlcomm: 考慮手續費下的淨盈虧。
+
+###### 分析器使用範例
+1. 夏普比率 Sharpe Ratio
+cerebro.addanalyzer(bt.analyzers.SharpeRatio)
+results = cerebro.run()
+strat = results[0]
+strat.analyzers.sharperatio.get_analysis()
+strat.analyzers.sharperatio.get_analysis()['sharperatio']
+
+2. 回撤 Drawdown
+cerebro.addanalyzer(bt.analyzers.DrawDown)
+results = cerebro.run()
+strat = results[0]
+strat.analyzers.drawdown.get_analysis()
+strat.analyzers.drawdown.get_analysis()['drawdown']
+
+3. 收益 Returns
+cerebro.addanalyzer(bt.analyzers.Returns)
+results = cerebro.run()
+strat = results[0]
+strat.analyzers.returns.get_analysis()
+
+4. Pyfolio
+cerebro.addanalyzer(bt.analyzers.Pyfolio)
+results = cerebro.run()
+strat = results[0]
+strat.analyzers.pyfolio.get_analysis()
+
+###### cerebro.broker 的使用範例
+1. 取得當前帳戶的現金餘額
+cerebro.broker.getcash()
+
+2. 取得當前帳戶的總額（包含現金和持倉的市值）
+cerebro.broker.getvalue()
+
+3. 取得持倉的價格
+cerebro.broker.getposition(data).price
+
+4. 取得持倉的數量
+cerebro.broker.getposition(data).size
+
+###### Backtrader 內建常用的指標函式使用範例
+簡單移動平均(SMA):
+bt.indicators.SimpleMovingAverage(self.data.close.period=20)
+
+指數移動平均(EMA):
+bt.indicators.ExponentialMovingAverage(self.data.close, period=20)
+
+相對強弱指數(RSI):
+bt.indicators.RSI(self.data.close, period=14)
+
+指數平滑異同移動平均(MACD):
+bt.indicators.MACD(self.data.close, period_me1=12, period_me=2, period_singl=9)
+
+布林帶(Bollinger Bands):
+bt.indicators.BollingerBands(self.data.close, period=20, devfactor=2.0)
+
+動量指標(Momentum):
+bt.indicators.Momentum(self.data.close, period=12)
+
+
+### Pyfolio 介紹
+Pyfolio 是一個管飯使用的投資風險與回報分析工具，常用於 Jupyter Notebook 中進行視覺化顯示。
 
 
 
@@ -260,43 +332,7 @@ order.Rejected: 訂單被拒絕。發生的原因可能是資金不足。
 
 
 
-"""夏普比率 Sharpe Ratio"""
-# cerebro.addanalyzer(bt.analyzers.SharpeRatio)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.sharperatio.get_analysis()
-# strat.analyzers.sharperatio.get_analysis()['sharperatio']
 
-"""回撤 Drawdown"""
-# cerebro.addanalyzer(bt.analyzers.DrawDown)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.drawdown.get_analysis()
-# strat.analyzers.drawdown.get_analysis()['drawdown']
-
-"""收益 Returns"""
-# cerebro.addanalyzer(bt.analyzers.Returns)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.returns.get_analysis()
-
-"""Pyfolio"""
-# cerebro.addanalyzer(bt.analyzers.Pyfolio)
-# results = cerebro.run()
-# strat = results[0]
-# strat.analyzers.pyfolio.get_analysis()
-
-"""取得當前帳戶的現金餘額"""
-# cerebro.broker.getcash()
-
-"""取得當前帳戶的總額（包含現金和持倉的市值）"""
-# cerebro.broker.getvalue()
-
-"""取得持倉的價格"""
-# cerebro.broker.getposition(data).price
-
-"""取得持倉的數量"""
-# cerebro.broker.getposition(data).size
 
 
 
@@ -321,47 +357,6 @@ Zipline
 Pyfolio(pip install pyfolio-reloaded)
 
 
-### Backtrader
-Backtrader 在 bt.Strategy 中常見的內建方法：
-__init__(): 初始化方法，在策略開始時執行，用於設置指標，包含定義策略會使用到的參數
-next()：每個時間步驟執行的方法，用於定義交易策略邏輯的函式
-notify_order()：追蹤訂單的狀態，「訂單狀態」變化時自動觸發。訂單狀態包含了提交、接受、完成、取消、拒絕等狀態
-notify_trade()：追蹤交易的狀態，「交易狀態」變化時自動觸發。任何已經平倉的交易的可以在滯個方法裡面顯示利潤
-stop()：策略結束時執行的方法
-buy()：建立一個買出訂單，但還沒執行，會在下一個交易時間點執行買入動作。關於訂單的執行狀態可以透過 notify_order 來得知
-sell()：建立一個賣出訂單，但還沒執行，會在下一個交易時間點執行買入動作。關於訂單的執行狀態可以透過 notify_order 來得知
-log()：定義回測執行過程中要輸出的內容，可以幫助我們了解策略執行的狀態
-
-#######
-Backtrader 的對應關係:
-0: Created
-1: Submitted
-2: Accepted
-3: Partial
-4: Completed
-5: Canceled
-6: Expired
-7: Margin
-8: Rejected
-
-### Backtrader 內建常用的指標函式使用範例
-簡單移動平均(SMA):
-bt.indicators.SimpleMovingAverage(self.data.close.period=20)
-
-指數移動平均(EMA):
-bt.indicators.ExponentialMovingAverage(self.data.close, period=20)
-
-相對強弱指數(RSI):
-bt.indicators.RSI(self.data.close, period=14)
-
-指數平滑異同移動平均(MACD):
-bt.indicators.MACD(self.data.close, period_me1=12, period_me=2, period_singl=9)
-
-布林帶(Bollinger Bands):
-bt.indicators.BollingerBands(self.data.close, period=20, devfactor=2.0)
-
-動量指標(Momentum):
-bt.indicators.Momentum(self.data.close, period=12)
 
 ### 
 收益 Return：
