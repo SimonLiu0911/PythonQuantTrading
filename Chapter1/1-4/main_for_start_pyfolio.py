@@ -1,45 +1,52 @@
+# %%
 import backtrader as bt
 import pyfolio as pf
 import yfinance as yf
 from datetime import date
 
 # 分析台積電股票的歷史價格數據，生成投資收益報表
-# 取得 2015/1/1 ~ 2023/12/31 的台積電股票數據
 
-stock_data = yf.download(
+# 設定要取得的數據區間：2015/1/1 ~ today
+start_date = "2015-01-01"
+end_date = date.today().strftime("%Y-%m-%d")
+
+# 取得台積電數據
+stock_data_2330 = yf.download(
     "2330.TW",
-    start="2015-01-01",
-    end=date.today().strftime("%Y-%m-%d"),
+    start=start_date,
+    end=end_date,
+    auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning(不要自動把開高低收價調整為復權價格)
+).droplevel("Ticker", axis=1)
+
+# 取得 0050 數據
+stock_data_0050 = yf.download(
+    "0050.TW",
+    start=start_date,
+    end=end_date,
     auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning(不要自動把開高低收價調整為復權價格)
 ).droplevel("Ticker", axis=1)
 
 # # 將股票數據的索引（日期）設置為台北時間
-# stock_data.index = stock_data.index.tz_localize("Asia/Taipei")
+# stock_data_2330.index = stock_data_2330.index.tz_localize("Asia/Taipei")
+# stock_data_0050.index = stock_data_0050.index.tz_localize("Asia/Taipei")
+
 
 # 計算每日收盤的百分比變動，這代表每日的收益率
-pct_change_close_data = stock_data["Close"].pct_change()
+pct_change_close_data_2330 = stock_data_2330["Close"].pct_change()
+pct_change_close_data_0050 = stock_data_0050["Close"].pct_change()
 
 # 使用 PyFolio 生成投資收益報表，分析每日收益率
-pf.create_returns_tear_sheet(pct_change_close_data)
+# pf.create_returns_tear_sheet(pct_change_close_data_2330)
+# pf.create_returns_tear_sheet(pct_change_close_data_0050)
 
-# 將台積電的表現與追蹤大盤指數的 ETF 作比較，生成投資收益表
-# 取得 0050 ETF 從 2015/1/1 ~ 2023/12/31 的數據
-benchmark_data = yf.download(
-    "0050.TW",
-    start="2015-01-01",
-    end=date.today().strftime("%Y-%m-%d"),
-    auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning(不要自動把開高低收價調整為復權價格)
-).droplevel("Ticker", axis=1)
+# 使用 PyFolio 生成投資收益報表，將台積電績效表現與 ETF 比較(將台積電的表現與追蹤大盤指數的 ETF 作比較，生成投資收益表)
+"""
+create_returns_tear_sheet 函式介紹：
+benchmark_rets：可選，基準的每日非累計報酬；若提供，會先對齊裁剪，後續多數 rolling 指標與 cone、beta、vol match 會用到。
 
-# # 將股票數據的索引（日期）設置為台北時間
-# benchmark_data.index = benchmark_data.index.tz_localize("Asia/Taipei")
-
-# 計算每日收盤價的百分比變動，，這代表每日的收益率
-pct_change_benchmark_close_data = benchmark_data["Close"].pct_change()
-
-# 使用 PyFolio 生成投資收益報表，將台積電績效表現與 ETF 比較
+"""
 pf.create_returns_tear_sheet(
-    pct_change_close_data, benchmark_rets=pct_change_benchmark_close_data
+    pct_change_close_data_2330, benchmark_rets=pct_change_close_data_0050
 )
 
 # 定義每月定期定額策略
@@ -68,16 +75,16 @@ class MonthlyInvestmentStrategy(bt.Strategy):
         pass
 
 
-cerebro = bt.Cerebro()
 data = bt.feeds.PandasData(
     dataname=yf.download(
         "0050.TW",
-        "2015-01-01",
-        "2023-12-31",
+        start_date,
+        end_date,
         auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning
     ).droplevel("Ticker", axis=1)
 )
 
+cerebro = bt.Cerebro()
 cerebro.adddata(data)
 cerebro.addstrategy(
     MonthlyInvestmentStrategy,

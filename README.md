@@ -321,8 +321,8 @@ bt.indicators.Momentum(self.data.close, period=12)
 
 
 ### Pyfolio 介紹
-Pyfolio 是一個管飯使用的投資風險與回報分析工具，常用於 Jupyter Notebook 中進行視覺化顯示。
-
+Pyfolio 是一個廣泛使用的投資風險與回報分析工具(分析器)，常用於 Jupyter Notebook 中進行視覺化顯示。
+在 Pyfolio 中，可以透過 benchmark_rets 參數來指定基準資料。如需要區分歷史資料和實盤資料，可以使用 live_start_date 參數來設置實盤資料開始的日期。在這個日期之前的數據被視為歷史回測資料，之後的數據則視為交易資料。
 
 
 
