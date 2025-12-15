@@ -1,4 +1,3 @@
-from __future__ import annotations
 import os, finlab
 import yfinance as yf
 import pandas as pd
@@ -255,26 +254,6 @@ def extend_factor_data(
         & (extended_data["index"] <= max(trading_days_df["index"]))
     ]
     return extended_data
-
-
-def convert_quarter_to_date(
-    quarter: Annotated[str, "年-季度字串，例如：2013-01"],
-) -> Annotated[Tuple[str, str], "季度對應的起始和結束日期字串"]:
-    """
-    函式說明：
-    將季度字串(quarter)轉換為起始和結束日期字串。
-    ex: 2013-Q1 -> 2013-05-16, 2013-08-14
-    """
-    year, qtr = quarter.split("-")
-    if qtr == "Q1":
-        return f"{year}-05-16", f"{year}-08-14"
-    if qtr == "Q2":
-        return f"{year}-06-15", f"{year}-11-14"
-    if qtr == "Q3":
-        return f"{year}-11-15", f"{int(year) + 1}-03-31"
-    if qtr == "Q4":
-        return f"{int(year) + 1}-04-01", f"{int(year) + 1}-05-15"
-
 
 def convert_date_to_quarter(
     date: Annotated[str, "日期字串，格式為 YYYY-MM-DD"],

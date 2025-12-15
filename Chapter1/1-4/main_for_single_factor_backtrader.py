@@ -1,3 +1,4 @@
+# %%
 import os
 import sys
 from pathlib import Path
@@ -62,8 +63,6 @@ select_rank_factor_dict = {
 # 準備因子數據，將個季度的因子數據進行排序。
 all_factor_data = pd.DataFrame()
 
-print(11111, all_factor_data)
-print(22222, all_stock_data)
 for quarter, factor in select_rank_factor_dict.items():
     # 將季度字串轉換為起始和結束日期
     start_date, end_date = chap1_utils.convert_quarter_to_dates(quarter)
@@ -123,59 +122,78 @@ class PanadasDataWithRank(bt.feeds.PandasData):
     lines = ("rank",)
 # 定義策略：根據因子排名買入和賣出股票
 class FactorRankStrategy(bt.Strategy):
-    pass # 請參考前面內容
-    # ////
-    # params = dict(buy_n=20, sell_n=20, each_cash=100000)
+    # 策略參數：要買入和賣出的股票數量，及每檔股票的交易金額
+    params = (
+        ("buy_n", None),  # 需要買入的股票數量
+        ("sell_n", None),  # 需要賣出的股票數量
+        ("each_cash", None),  # 每檔股票交易的金額
+    )
 
-    # def __init__(self):
-    #     self.last_rebalance = None  # 上次進行調倉的日期(None代表未調倉)
+    def __init__(self):
+        self.stocks = self.datas  # 將所有股票數據存在 self.stocks 變數中
+        self.buy_positions = set()  # 記錄已買入的股票名稱
+        self.sell_positions = set()  # 記錄已賣出的股票名稱
 
-    # def next(self):
-    #     current_date = self.datas[0].datetime.date(0)
-    #     # 每月第一次交易日才重新調倉，避免每天重複下單
-    #     if self.last_rebalance and (
-    #         self.last_rebalance.year == current_date.year
-    #         and self.last_rebalance.month == current_date.month
-    #     ):
-    #         return
+    def next(self):
+        # 取得當天所有股票的因子排名：ex: {stock1: 1, stock2: 2}
+        ranks = {data._name: data.rank[0] for data in self.stocks}
+        # 根據排名從低到高排序：排名愈小的因子值愈小，排名愈大的因子值愈大
+        sorted_ranks = sorted(ranks.items(), key=lambda x: x[1])
+        # 取得排明最高的 buy_n 個股票（要買入的股票）
+        if self.params.buy_n:
+            buy_n_list = sorted_ranks[-self.params.buy_n :]
+            buy_n_names = [name for name, rank in buy_n_list]  # 提取股票名稱
+
+        # 取得排明最低的 sell_n 個股票（要賣出的股票）
+        if self.params.sell_n:
+            sell_n_list = sorted_ranks[: self.params.sell_n]
+            sell_n_names = [name for name, rank in sell_n_list]  # 提取股票名稱
         
-    #     self.last_rebalance = current_date
+        # 進行買入與賣出操作
+        for data in self.stocks:
+            # 取得當前股票名稱
+            name = data._name
+            # 取得當前股票的收盤價
+            close_price = data.close[0]
+            # 計算每檔股票的交易股數
+            size = int(self.params.each_cash / close_price)
+            # 1. 處理賣出(做空)操作
+            if self.params.sell_n:
+                if name in self.sell_positions and name not in sell_n_names:
+                    # 如果股票已賣出且不再賣出清單，則平倉
+                    self.close(data)
+                    self.sell_positions.remove(name)
+                elif name not in self.sell_positions and name in sell_n_names:
+                    # 如果股票在賣出清單中，則賣出
+                    self.sell(data, size=size)
+                    self.sell_positions.add(name)
+            # 2. 處理買入（做多）操作
+            if self.params.buy_n:
+                if name in self.buy_positions and name not in buy_n_names:
+                    # 如果股票以買入且不再買入清倉，則平倉
+                    self.close(data)
+                    self.buy_positions.remove(name)
+                elif name not in self.buy_positions and name in buy_n_names:
+                    # 如果股票在買入清單中，則買入
+                    self.buy(data, size=size)
+                    self.buy_positions.add(name)
 
-    #     ranked = []
-    #     for data in self.datas:
-    #         rank = data.rank[0]
-    #         if pd.isna(rank):
-    #             continue
-    #         ranked.append((rank, data))
-    #     if not ranked:
-    #         return
-    #     ranked.sort(key=lambda x: x[0])  # rank 值愈小代表排名愈前面
 
-    #     top_to_hold = {d._name for _, d in ranked[: self.p.buy_n]}
 
-    #     # 先賣出：持有但不在前 buy_n，且位於最末的 sell_n 名
-    #     held_with_rank = [
-    #         (data.rank[0], data)
-    #         for data in self.datas
-    #         if self.getposition(data).size != 0 and not pd.isna(data.rank[0])
-    #     ]
-    #     held_with_rank.sort(key=lambda x: x[0], reverse=True)  # 排名越大越差
-    #     for rank, data in held_with_rank[: self.p.sell_n]:
-    #         if data._name not in top_to_hold:
-    #             self.close(data=data)
 
-    #     # 再買入：補齊前 buy_n 名中尚未持有的股票
-    #     for _, data in ranked[: self.p.buy_n]:
-    #         if self.getposition(data).size != 0:
-    #             continue
-    #         price = data.close[0]
-    #         if price <= 0:
-    #             continue
-    #         size = int(self.p.each_cash / price)
-    #         if size <= 0:
-    #             continue
-    #         self.buy(data=data, size=size)
-    # ////
+"""
+如果要執行多空策略
+cerebro.addstrategy(FactorRankStrategy, buy_n=10, sell_n=10, each_cash=100_0000)
+
+如果要執行做多策略
+cerebro.addstrategy(FactorRankStrategy, buy_n=10, each_cash=100_0000)
+
+如果要執行做空策略
+cerebro.addstrategy(FactorRankStrategy, sell_n=10, each_cash=100_0000)
+"""
+
+
+
 
 # 設定回測引擎
 cerebro = bt.Cerebro()
