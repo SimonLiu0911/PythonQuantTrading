@@ -474,7 +474,11 @@ talib.abstract.SMA(data, timeperiod=30)
 標準差(Standard Deviation)：talib.STDDEV
 
 
+#### 開源的 Alphas-WorldQuant 101(P2-27)
+https://github.com/yli188/WorldQuant_alpha101_code
 
+#### 開源的 Alphas-國泰君安191(P2-30)
+https://github.com/popbo/alphas
 
 
 
