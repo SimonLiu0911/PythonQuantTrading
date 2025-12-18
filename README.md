@@ -175,6 +175,15 @@ ROE稅後*
 財報因子的表現穩定性是選擇靜態還是動態選股模型的關鍵。如過一個因子的表現長期穩定，就可以選擇操作簡單的靜態選股模型，反之則反。
 
 ## 1.4 財報因子選股模型回測績效
+### 常見回測框架
+Backtrader(pip install backtrader)
+Backtest
+Vnpy
+Zipline
+
+### 視覺化呈現框架
+Pyfolio(pip install pyfolio-reloaded)
+
 ### Backtrader介紹
 一個量化交易研究平台，提供策略開發、回測、策略優化和實際交易執行的功能。需要建立一個 Cerebro 回測引擎實例，然後給它數據來源、交易策略、觀察的指標，它會根據這些資訊進行計算並給出回測結果。
 
@@ -422,49 +431,52 @@ KD指標有兩條主要線：快線(K)和慢線(D)，K線對價格變動更敏�
 
 
 ## 快速產生多種價量因子(P2-21)
+可用 TALIB 的 Python 套件。除了 TALIB，還有許多開源的 Alpha 因子資源可供使用。
+
+### TALIB 使用介紹
+先用指令(`pip install TA-Lib`)安裝，之後就可以 `import talib` 使用這個技術分析工具。此套件提供 158 種技術指標，可透過 `get_function_groups()` 函式獲取所有分類後的指標列表。這些指標根據其用途劃分為 10 個類別。
+
+1. 週期指標(Cycle Indicators)：用來捕捉價格的週期性變化，幫助發現趨勢循環。
+2. 數學運算符(Math Operators)：用於進行基礎數學運算，如加、減、乘、除，方便基本數據處理。
+3. 數學變換(Math Transform)：對數據進行數學變換，可使用線性和非線性轉換，例如正弦（COS）、餘弦（SIN）、正切（TAN）、指數（EXP）等，來挖掘數據的潛在規律。
+4. 動量指標(Momentum Indicators)：這些指標衡量價格變動的速度和強度，幫助識別市場的超買或超賣狀態，以及判斷價格趨勢的持續性。
+5. 重疊研究(Overlap Studies)：這類指標通常疊加在價格圖上，提供直觀的視覺輔助，例如移動平均線和布林通道
+6. 形態識別(Pattern Recognition)：用於識別價格圖中的各種形態或模式，如頭肩頂和頭肩底，幫助掌握市場反轉訊號。
+7. 價格變換(Price Transform)：對價格數據進行變換，突出價格的特性或模式。
+8. 統計函式(Statistic Functions)：透過計算平均值、標準差、相關性等指標，這些統計函式能夠顯示市場數據的特性和趨勢。
+9. 波動率指標(Volatility Indicators)：用於衡量價格波動的幅度，常用於風險管理和市場波動性的預測。
+10. 成交量指標(Volume Indicators)：分析市場的交易量，幫助了解市場參與者的行為和情緒。
+
+
+以生成收盤價的30日移動平過線當示範
+第一種方法：`talib.指標名稱(需要的欄位資料, 參數)`
+import talib
+talib.SMA(data['Close'], timeperiod=30)
+
+第二種方法：`talib.abstract.指標名稱(完整的股價資料, 參數)`
+from talib import abstract
+talib.abstract.SMA(data, timeperiod=30)
+
+#### 四大類價量因子對應 TALIB 中函式的範例表
+1. 動量因子：
+相對強弱指數(RSI)：talib.RSI
+移動平均收斂發散指標(MACD)：talib.MACD
+動量(Momentum)：talib.MOM
+隨機震盪指數(KD)：talib.STOCH
+
+2. 反轉因子：
+布林通道(Bollinger Bands)：talib.BBANDS
+隨機震盪指數(KD)：talib.STOCH
+
+3. 流動率因子：
+平均真實波幅(Average True Range)：talib.ATR
+布林通道(Bollinger Bands)：talib.BBANDS
+標準差(Standard Deviation)：talib.STDDEV
 
 
 
 
 
-
-
-### 主成份分析法
-在資料分析中，主成份分析的目的是從大量的變數中，透過組合的方式來生成少數新的變數，這些新變數稱為「主成份」。
-主成份是基於原始變數生成的，能夠捕捉資料中的大部分重要資訊，同時，主成份的數量會比原始變數少，從而有效降低數據的複雜性。
-透過此分析，可以去除一些資訊量較少的變數，或者去除那些傳達相似資訊的變數，讓我們能夠更聚焦在最重要的部分。
-例如：
-「營業利益」、「營業利益率」、「營業營收比」這三個只表可能都在傳達相似的資訊，透果主成份分析，可能就會將它們合併為一個與營業相關的主成份，這樣就大大減少了變數的數量，同時保留了數據中最關鍵的訊息。
-
-### 常見回測框架
-Backtrader(pip install backtrader)
-Backtest
-Vnpy
-Zipline
-
-
-### 視覺化呈現框架
-Pyfolio(pip install pyfolio-reloaded)
-
-
-
-### 
-
-相對強弱指標 Relative Strength Index:
-是一個 0～100 的指標，用「最近一段時間漲 vs 跌的力道」來衡量多空動能，常用來判斷超買／超賣與行情強弱。
-股價每天都在漲跌，但有時候：
-*是一路慢慢往上、回檔很少 → 多頭強
-*是一路慢慢往下、反彈很弱 → 空頭強
-
-RSI 就是在量化這件事：
-看最近 N 根 K 棒（最常用是 14 根）的：
-*平均「漲幅」有多大
-*平均「跌幅」有多大
-
-然後比較：到底是漲比較用力，還是跌比較用力
-
-### OHLCV
-OHLCV 是金融市場中用於描述證券（如股票、加密貨幣等）在特定時間段內的交易活動的關鍵數據。它代表「開盤價 (Open)」、「最高價 (High)」、「最低價 (Low)」、「收盤價 (Close)」和「成交量 (Volume)」。這五個數據點共同繪製成圖表，例如蠟燭圖或美國線，用於分析價格走勢。 
 
 
 
