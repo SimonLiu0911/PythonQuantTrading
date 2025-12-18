@@ -80,3 +80,23 @@ data["BBANDS_upper"], data["BBANDS_middle"], data["BBANDS_lower"] = talib.BBANDS
     nbdevdn=2.0,  # 下軌線與中軌線之間的標準差為 2
     matype=0,  # 移動平均的類型為簡單移動平均
 )
+
+""""""
+
+# 方法二：：使用 TALIB 的 abstract 模組進行技術指標計算
+# 使用 abstract 模組時，資料欄位必須符合 TALIB 所需的格式
+# TALIB 要求的資料欄位名稱為“open"，“high"，"low"，"close"
+# 重新命名資料欄位名稱，使其符合 TALIB 所需的格式
+data = data.rename(
+    columns={
+        "Open": "open",
+        "High": "high",
+        "Low": "low",
+        "Close": "close"
+    }
+)
+# 使用 TALIB 的 abstract 模組計算 30 天的簡單移動平均線（SMA），並將結果存入“SMA”欄位
+data["SMA-2"] = talib.abstract.SMA(data, timeperiod=30)
+
+# 使用 TALIB 的 abstract 模組計算 14 天的相對強弱指標（RSI），並將結果存入 "RSI" 欄位
+data["RSI-2"] = talib.abstract.RSI(data, timeperiod=14)
