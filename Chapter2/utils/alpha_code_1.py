@@ -173,7 +173,7 @@ def decay_linear(df, period=10):
     na_lwma = np.zeros_like(df)
     na_lwma[:period, :] = df.iloc[:period, :] 
     # na_series = df.as_matrix()
-    na_series = df.values()
+    na_series = df.values
 
     divisor = period * (period + 1) / 2
     y = (np.arange(period) + 1) * 1.0 / divisor
@@ -274,7 +274,7 @@ def get_alpha(df):
 class Alphas(object):
     def __init__(self, df_data):
 
-        self.open = df_data['S_DQ_OPEN'] 
+        self.open = df_data['S_DQ_OPEN']
         self.high = df_data['S_DQ_HIGH'] 
         self.low = df_data['S_DQ_LOW']   
         self.close = df_data['S_DQ_CLOSE'] 
@@ -704,9 +704,9 @@ class Alphas(object):
         adv40 = sma(self.volume, 40)
         p1=rank(decay_linear(((((self.high + self.low) / 2) + self.high) - (self.vwap + self.high)).to_frame(), 20).CLOSE)
         p2=rank(decay_linear(correlation(((self.high + self.low) / 2), adv40, 3).to_frame(), 6).CLOSE)
-        df=pd.DataFrame({'p1':p1,'p2':p2})
-        df.at[df['p1']>=df['p2'],'min']=df['p2']
-        df.at[df['p2']>=df['p1'],'min']=df['p1']
+        df = pd.DataFrame({'p1': p1, 'p2': p2})
+        df.loc[df['p1'] >= df['p2'], 'min'] = df['p2']
+        df.loc[df['p2'] >= df['p1'], 'min'] = df['p1']
         return df['min']
         #return min(rank(decay_linear(((((self.high + self.low) / 2) + self.high) - (self.vwap + self.high)).to_frame(), 20).CLOSE),rank(decay_linear(correlation(((self.high + self.low) / 2), adv40, 3).to_frame(), 6).CLOSE))
     

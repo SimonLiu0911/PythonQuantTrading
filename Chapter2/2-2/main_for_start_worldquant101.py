@@ -30,12 +30,16 @@ data.columns.name = None
 data = data.rename(
     columns={
         "Open": "S_DQ_OPEN",  # 開盤價
-        "High":"'S_DQ_HIGH",  # 最高價
+        "High": "S_DQ_HIGH",  # 最高價
         "Low": "S_DQ_LOW",  # 最低價
         "Close": "S_DQ_CLOSE", # 收盤價
         "Volume": "S_DQ_VOLUME",  # 成交量
     }
 )
+
+# 補齊 Alpha_code_1 需要的欄位（yfinance 下載的資料未提供）
+data["S_DQ_PCTCHANGE"] = data["S_DQ_CLOSE"].pct_change()
+data["S_DQ_AMOUNT"] = data["S_DQ_CLOSE"] * data["S_DQ_VOLUME"]
 
 # 使用 Alpha_code_1 模組中的 get_alpha 函數生成 Alpha 因子
 # alpha_data 的每一個欄位代表一個不同的 Alpha 因子
@@ -46,7 +50,7 @@ alpha_data = chap2_utils_alpha_code_1.get_alpha(data)
 missing_ratios = alpha_data.isnull().mean()
 keeping_columns = missing_ratios[missing_ratios < 0.1].index
 
-# 條件二：計算每個因子中 ④ 值的比例，保留 ② 值比例小於 10% 的因子
+# 條件二：計算每個因子中 0 值的比例，保留 0 值比例小於 10% 的因子
 zero_ratios = (alpha_data == 0).mean()
 keeping_columns = [
     col for col in keeping_columns if zero_ratios[col] < 0.1
@@ -62,3 +66,11 @@ alpha_data = alpha_data[keeping_columns].ffill().dropna()
 
 # 顯示前幾筆 Alpha 因子資料
 alpha_data.head()
+
+# # 把資料寫進csv
+# import os
+# os.makedirs("outputs", exist_ok=True)
+# tmp = "outputs/alpha_data2.tmp"
+# final = "outputs/alpha_data2.csv"
+# alpha_data.to_csv(tmp, index=False, encoding="utf-8")
+# os.replace(tmp, final)
