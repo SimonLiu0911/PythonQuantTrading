@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from numpy import log
 from scipy.stats import rankdata
 from .alphas import Alphas
@@ -122,18 +123,23 @@ def Returns(df):
 
 class Alphas191(Alphas):
     def __init__(self, df_data):
-        self.open = df_data['open'] # 开盘价
-        self.high = df_data['high'] # 最高价
-        self.low = df_data['low'] # 最低价
-        self.close = df_data['close'] # 收盘价
-        self.volume = df_data['volume'] # 成交量
-        self.returns = Returns(df_data['close']) # 日收益率
-        self.vwap = df_data['vwap']  # 成交均价
-        self.close_prev = df_data['close'].shift(1)#前一天收盘价        
-        self.amount = df_data['amount']#交易额
-        
-        self.benchmark_open = df_data['benchmark_open']#指数开盘价series
-        self.benchmark_close = df_data['benchmark_close']#指数收盘价series
+        def _to_frame(value, name):
+            if isinstance(value, pd.Series):
+                return value.to_frame(name=name)
+            return value
+
+        self.open = _to_frame(df_data['open'], 'asset')  # 开盘价
+        self.high = _to_frame(df_data['high'], 'asset')  # 最高价
+        self.low = _to_frame(df_data['low'], 'asset')  # 最低价
+        self.close = _to_frame(df_data['close'], 'asset')  # 收盘价
+        self.volume = _to_frame(df_data['volume'], 'asset')  # 成交量
+        self.returns = _to_frame(Returns(df_data['close']), 'asset')  # 日收益率
+        self.vwap = _to_frame(df_data['vwap'], 'asset')  # 成交均价
+        self.close_prev = self.close.shift(1)  # 前一天收盘价
+        self.amount = _to_frame(df_data['amount'], 'asset')  # 交易额
+
+        self.benchmark_open = df_data['benchmark_open']  # 指数开盘价series
+        self.benchmark_close = df_data['benchmark_close']  # 指数收盘价series
         # self.value = df_data['value']#公司总市值
 
     def alpha001(self): #平均1751个数据

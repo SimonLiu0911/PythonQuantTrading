@@ -1,6 +1,7 @@
 # %%
 import os
 import sys
+import numpy as np
 import pandas as pd
 import yfinance as yf
 
@@ -10,101 +11,109 @@ sys.path.append(utils_folder_path)
 # 載入 Chapter2 資料夾中的 alpha_code_1.py ，並命名為 chap1_utils
 from Chapter2.utils import alpha_code_1 as chap2_utils_alpha_code_1
 from Chapter2.utils import alphas191 as chap2_utils_alphas191
+from Chapter2.utils import alphas as chap2_utils_alphas
 
-# # 載入 Chapter2/utils/ 資料夾中的 alphas191.py 模組
+# 載入 Chapter2/utils/ 資料夾中的 alphas191.py 模組
 # import Chapter2.utils.alphas as alphas # noqa: E402
 # import Chapter2.utils.alphas191 as alphas191 # noqa: E402
 
-# """
-# 備註：
-# 在計算 Alpha 因子時，許多指標會依賴過去數天的歷史數據，因此如果只選取所需的日期範圍，可能會導致早期的 Alpha 因子無法正確計算。
-# 為了解決這個問題，建議再選取資料時擴大日期範圍，這樣可以確保計算 Alpha 因子時有足夠的歷史數據可用。
-# 計算完所有因子後，再篩選出需要分析的時間段資料即可
-# """
+"""
+備註：
+在計算 Alpha 因子時，許多指標會依賴過去數天的歷史數據，因此如果只選取所需的日期範圍，可能會導致早期的 Alpha 因子無法正確計算。
+為了解決這個問題，建議再選取資料時擴大日期範圍，這樣可以確保計算 Alpha 因子時有足夠的歷史數據可用。
+計算完所有因子後，再篩選出需要分析的時間段資料即可
+"""
 
-# # 使用 yfinance 取得台泥（1101.TW）股票資料，日期範圍為 2021-11-01 到 2022-12-31
-# data = (
-#     pd.DataFrame(yf.download("1101.TW", start="2021-11-01", end="2022-12-31"))
-#     .droplevel("Ticker", axis=1)
-#     .reset_index()
-#     .ffill()
-# )
-# data.columns.name = None
+# 使用 yfinance 取得台泥（1101.TW）股票資料，日期範圍為 2021-11-01 到 2022-12-31
+data = (
+    pd.DataFrame(yf.download("1101.TW", start="2021-11-01", end="2022-12-31"))
+    .droplevel("Ticker", axis=1)
+    .reset_index()
+    .ffill()
+)
+data.columns.name = None
 
-# # 重新命名資料表的欄位名稱，以符合 Alpha191 模組要求
-# data = data.rename(
-#     columns={
-#         "Close": "close",  # 收盤價
-#         "Open": "open",  # 開盤價
-#         "yolume": "volume",  # 交易量
-#         "Low": "low",  # 最低價
-#         "High": "high", # 最高價
-#     }
-# )
+# 重新命名資料表的欄位名稱，以符合 Alpha191 模組要求
+data = data.rename(
+    columns={
+        "Close": "close",  # 收盤價
+        "Open": "open",  # 開盤價
+        "Volume": "volume",  # 交易量
+        "Low": "low",  # 最低價
+        "High": "high", # 最高價
+    }
+)
 
-# # 加入基準資料（0050.TW）的資料，用於 Alpha191 模組比較分析
-# benchmark_data = (
-#     pd.DataFrame(yf.download ("0050.TW", start="2016-01-01", end="2019-12-31"))
-#     .droplevel("Ticker", axis=1)
-#     .reset_index()
-#     .ffill()
-# )
-# benchmark_data.columns.name = None
+# 計算 amount 與 vwap（避免除以 0）；確保 Alphas191 所需欄位存在
+data['amount'] = data['close'] * data['volume']
+# 若 volume 為 0，先以 NaN 避免除以 0，之後選擇性填補
+data['vwap'] = data['amount'] / data['volume'].replace(0, np.nan)
+# 選擇性：填補開頭/結尾缺值以避免後續運算出錯
+data['vwap'] = data['vwap'].ffill().bfill()
 
-# # 將基準資料的開盤價與收盤價加入到 data 中
-# data["benchmark_open"] = benchmark_data["Open" ]
-# data["benchmark_close"] = benchmark_data["Close"]
-# data = data.ffill().dropna()
+# 加入基準資料（0050.TW）的資料，用於 Alpha191 模組比較分析
+benchmark_data = (
+    pd.DataFrame(yf.download ("0050.TW", start="2016-01-01", end="2019-12-31"))
+    .droplevel("Ticker", axis=1)
+    .reset_index()
+    .ffill()
+)
+benchmark_data.columns.name = None
 
-# # 初始化 Alphas191 類別，並傳入台泥的股票資料
-# alpha_2330 = alphas191.Alphas191(data)
+# 將基準資料的開盤價與收盤價加入到 data 中
+data["benchmark_open"] = benchmark_data["Open" ]
+data["benchmark_close"] = benchmark_data["Close"]
+data = data.ffill().dropna()
 
-# # 取得所有 Alpha 方法的列表
-# alpha_methods = alphas.Alphas.get_alpha_methods(alphas191.Alphas191)
-# alpha_dict = {} # 儲存成功執行的 Alpha 因子結果
-# error_method = [] # 儲存執行失敗的 Alpha 方法名稱
-# success_method = [] # 儲存執行成功的 Alpha 方法名稱
+# 初始化 Alphas191 類別，並傳入台泥的股票資料
+alpha_2330 = chap2_utils_alphas191.Alphas191(data)
 
-# # 逐一執行所有 Alpha 方法，並記錄執行成功或失敗的情況
-# for method in alpha_methods:
-#     try:
-#         # 執行每個 Alpha 方法，並將結果存入 DataFrame
-#         df = getattr(alpha_2330, method)()
+# 取得所有 Alpha 方法的列表
+alpha_methods = chap2_utils_alphas.Alphas.get_alpha_methods(chap2_utils_alphas191.Alphas191)
+alpha_dict = {} # 儲存成功執行的 Alpha 因子結果
+error_method = [] # 儲存執行失敗的 Alpha 方法名稱
+success_method = [] # 儲存執行成功的 Alpha 方法名稱
 
-#         # 根據產生的欄位數量，為結果設定新欄位名稱
-#         new_columns = [f"{method}_{i+1}" for i in range (int (df.shape[1]))]
-#         df.columns = new_columns
+# 逐一執行所有 Alpha 方法，並記錄執行成功或失敗的情況
+for method in alpha_methods:
+    try:
+        # 執行每個 Alpha 方法，並將結果存入 DataFrame
+        df = getattr(alpha_2330, method)()
 
-#         # 將結果儲存到 alpha_dict 中
-#         alpha_dict[method] = df
+        # 根據產生的欄位數量，為結果設定新欄位名稱
+        new_columns = [f"{method}_{i+1}" for i in range (int (df.shape[1]))]
+        df.columns = new_columns
 
-#         # 將成功的 Alpha 方法名稱加入 success_method 列表
-#         success_method.append(method)
+        # 將結果儲存到 alpha_dict 中
+        alpha_dict[method] = df
 
-#     except Exception as e:
-#         # 如果執行失敗，將失敗的 Alpha 方法名稱加入 error_method 列表，並顯示錯誤訊息
-#         error_method.append(method)
-#         print(f"Error in method {method}: {e}")
+        # 將成功的 Alpha 方法名稱加入 success_method 列表
+        success_method.append(method)
 
-# # 將所有成功執行的 Alpha 方法的結果合併成一個 DataFrame
-# # # 每個 column 代表一個 Alpha 因子
-# alpha_data = pd.concat(alpha_dict.values(), axis=1)
+    except Exception as e:
+        # 如果執行失敗，將失敗的 Alpha 方法名稱加入 error_method 列表，並顯示錯誤訊息
+        error_method.append(method)
+        print(f"Error in method {method}: {e}")
 
-# # 設定三個條件來篩選 Alpha 因子；
-# # 條件一：計算每個因子遺失值的比例，保留這失值比例小於 10%的因子
-# missing_ratios = alpha_data.isnull().mean()
-# # 只保留遺失值比例小於 10% 的因子
-# keeping_columns = missing_ratios[missing_ratios < 0.1].index
+# 將所有成功執行的 Alpha 方法的結果合併成一個 DataFrame
+# # 每個 column 代表一個 Alpha 因子
+alpha_data = pd.concat(alpha_dict.values(), axis=1)
 
-# # 條件二：計算每個因子中 0 值的比例，保留 0 值比例小於 10% 的因子
-# zero_ratios = (alpha_data == 0).mean()
-# keeping_columns = [col for col in keeping_columns if zero_ratios[col] < 0.1]
+# 設定三個條件來篩選 Alpha 因子；
+# 條件一：計算每個因子遺失值的比例，保留這失值比例小於 10%的因子
+missing_ratios = alpha_data.isnull().mean()
+# 只保留遺失值比例小於 10% 的因子
+keeping_columns = missing_ratios[missing_ratios < 0.1].index
 
-# # 條件三：檢查每個因子是否為浮點數型別，並只保留是浮點數型別的因子
-# keeping_columns = [
-#     col for col in keeping_columns if pd.api.types.is_float_dtype(alpha_data[col])
-# ]
+# 條件二：計算每個因子中 0 值的比例，保留 0 值比例小於 10% 的因子
+zero_ratios = (alpha_data == 0).mean()
+keeping_columns = [col for col in keeping_columns if zero_ratios[col] < 0.1]
 
-# # 根據篩選條件保留符合條件的 Alpha 因子
-# alpha_data = alpha_data[keeping_columns].ffill().dropna()
-# alpha_data.head()
+# 條件三：檢查每個因子是否為浮點數型別，並只保留是浮點數型別的因子
+keeping_columns = [
+    col for col in keeping_columns if pd.api.types.is_float_dtype(alpha_data[col])
+]
+
+# 根據篩選條件保留符合條件的 Alpha 因子
+alpha_data = alpha_data[keeping_columns].ffill().dropna()
+alpha_data.head()
