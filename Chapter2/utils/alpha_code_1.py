@@ -36,10 +36,11 @@ def stddev(df, window=10):
 
 def correlation(x, y, window=10):
     """
-    Wrapper function to estimate rolling corelations.
-    :param df: a pandas DataFrame.
+    Wrapper function to estimate rolling correlations.
+    :param x: a pandas DataFrame.
+    :param y: a pandas DataFrame.
     :param window: the rolling window.
-    :return: a pandas DataFrame with the time-series min over the past 'window' days.
+    :return: a pandas DataFrame with the rolling correlation over the past 'window' days.
     """
     return x.rolling(window).corr(y)
 
@@ -124,9 +125,9 @@ def delay(df, period=1):
 
 def rank(df):
     """
-    Cross sectional rank
+    Column-wise rank
     :param df: a pandas DataFrame.
-    :return: a pandas DataFrame with rank along columns.
+    :return: a pandas DataFrame with rank within each column.
     """
     #return df.rank(axis=1, pct=True)
     return df.rank(pct=True)
@@ -280,7 +281,7 @@ class Alphas(object):
         self.close = df_data['S_DQ_CLOSE'] 
         self.volume = df_data['S_DQ_VOLUME']*100 
         self.returns = df_data['S_DQ_PCTCHANGE'] 
-        self.vwap = (df_data['S_DQ_AMOUNT']*1000)/(df_data['S_DQ_VOLUME']*100+1) 
+        self.vwap = (df_data['S_DQ_AMOUNT']*1000)/(df_data['S_DQ_VOLUME']*100+1) # vwap: volume weighted average price(成交量加權平均價格)
         
     # Alpha#1	 (rank(Ts_ArgMax(SignedPower(((returns < 0) ? stddev(returns, 20) : close), 2.), 5)) -0.5)
     def alpha001(self):
