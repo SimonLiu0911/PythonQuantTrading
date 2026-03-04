@@ -2,13 +2,12 @@
 
 ## Plugin
 ### Necessary Plugin:
-typing_extensions:
-一個為 Python 型別提示的工具，能在型別提示中附加額外說明，適合在函式參數中提供更詳細的描述。
-
-typing
-python-dotenv
-yfinance
-finlab
+typing, typing_extensions:
+一個為 Python 型別提示的工具，能在型別提示中附加額外說明，適合在函式參數中提供更詳細的描述。typing_extensions 是新版 typing 向下相容的版本。
+os: Python 標準函式庫中的模組，用來與作業系統互動，不需安裝即可使用。
+python-dotenv: 用來把環境變數 .env 檔案中的環境變數載入到 Python 裡
+yfinance: 可以用來下載 Yahoo Finance 金融市場資料
+finlab: 台股量化投資與策略回測平台所提供的 Python 套件
 
 ## 1.2 透過 Alphalens 評估因子
 ### Alphalens
