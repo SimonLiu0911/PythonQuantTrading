@@ -8,6 +8,7 @@ os: Python 標準函式庫中的模組，用來與作業系統互動，不需安
 python-dotenv: 用來把環境變數 .env 檔案中的環境變數載入到 Python 裡
 yfinance: 可以用來下載 Yahoo Finance 金融市場資料
 finlab: 台股量化投資與策略回測平台所提供的 Python 套件
+alphalens: 用於量化投資因子分析的 Python 套件
 
 ## 1.2 透過 Alphalens 評估因子
 ### Alphalens
