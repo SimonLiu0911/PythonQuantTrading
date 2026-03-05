@@ -1,6 +1,7 @@
 import os, finlab
 import yfinance as yf
 import pandas as pd
+from pathlib import Path
 from dotenv import load_dotenv
 from typing_extensions import Annotated
 from typing import Tuple, Iterable, Annotated
@@ -9,14 +10,20 @@ from finlab import data
 # current_folder = os.path.dirname(__file__) # 目前程式檔案所在的資料夾相對路徑
 # parent_folder = os.path.dirname(current_folder) # 目前程式檔案所在的資料夾的上一層資料夾路徑
 
+def get_parent_dir(levels=1):
+    return Path(__file__).parent.relative_to(Path(__file__).anchor) if levels == 0 else Path(__file__).parents[levels - 1]
+
 
 def finlab_login() -> None:
     """
     函式說明：使用 FinLab API token 登入 FinLab
     """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_folder = os.path.dirname(current_dir)
-    # parent_parent_folder = os.path.dirname(parent_folder)
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
+    # parent_folder = os.path.dirname(current_dir)
+    # # parent_parent_folder = os.path.dirname(parent_folder)
+
+    parent_folder = get_parent_dir(2)
+
     # 載入 .env 檔案中定義的變數
     load_dotenv(f"{parent_folder}/.env")
     # 取得儲存在 .env 檔案中 FINLAB API Token
