@@ -1,7 +1,9 @@
+# %%
 # 載入需要的套件
 import json, os, sys
 from alphalens.tears import create_full_tear_sheet
 from alphalens.utils import get_clean_factor_and_forward_returns
+import pandas as pd
 
 # get_clean_factor_and_forward_returns: 可以根據 period 參數來設置分析的時間範圍
 
@@ -52,9 +54,15 @@ factor_data.head()
 # print(f"列出欄位名稱{factor_data.columns}")
 # print(f"列出索引名稱（日期，股票代碼）：{factor_data.index}")
 
+# 確保索引是日期型別，並把因子轉成 Alphalens 需要的長格式
+close_price_data.index = pd.to_datetime(close_price_data.index)
+factor_data.index = pd.to_datetime(factor_data.index)
+factor = factor_data.stack()
+factor.index.names = ["date", "asset"]
+
 """使用 Alphalens 將因子數據與收益數據結合。生成 Alphalens 分析所需的數據表格。"""
 alphalens_factor_data = get_clean_factor_and_forward_returns(
-    factor=factor_data.squeeze(),
+    factor=factor,
     prices=close_price_data,
     quantiles=5
 )
