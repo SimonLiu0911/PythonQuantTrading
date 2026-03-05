@@ -303,7 +303,7 @@ def rank_stocks_by_factor(
     rank_column: Annotated[str, "用於排序的欄位名稱"],
     rank_result_column: Annotated[str, "保存排序結果的欄位名稱"] = "rank",
 ) -> Annotated[
-    pd.Dateframe,
+    pd.DataFrame,
     "包含排序結果的資料表",
     "欄位名稱含asset(股票代碼欄位)、datetime(日期欄位)、value(因子值欄位)、rank(排序結果欄位)",
 ]:
