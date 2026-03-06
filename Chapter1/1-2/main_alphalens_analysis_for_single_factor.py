@@ -25,6 +25,7 @@ top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
         "建材營造",
     ],
     pre_list_date="2017-01-03",
+    # top_n=300,
 )
 # print(f"列出市值前 10 大的股票代號：{ top_N_stocks[:10] }")
 # print(f"列出市值前 10 大的股票代號：{ top_N_stocks }")
@@ -52,13 +53,24 @@ factor_data.head()
 # print(f"列出欄位名稱{factor_data.columns}")
 # print(f"列出索引名稱（日期，股票代碼）：{factor_data.index}")
 
+"""把因子資料轉成 (date, asset) 的長表，再把代碼補上 .TW。"""
+# 確保 factor 是 Series (MultiIndex)，把寬表變長表
+factor = factor_data.stack()
+# 因轉成長表後，變成有三層(["date", "asset", None])去掉第三層（name 是 None 的那層）
+factor = factor.droplevel(2)
+# 設定正確的 index names
+factor.index.names = ["date", "asset"]
+factor = factor.rename(lambda x: f"{x}.TW", level="asset")
+
+
 """使用 Alphalens 將因子數據與收益數據結合。生成 Alphalens 分析所需的數據表格。"""
 alphalens_factor_data = get_clean_factor_and_forward_returns(
-    factor=factor_data.squeeze(),
+    factor=factor,
     prices=close_price_data,
     quantiles=5
 )
 """
+msg回傳對照：
 「Dropped 1% entries from factor data: 1.0% in forward returns computation. max_loss is 35.0%, not exceeded: OK!」
 Dropped 1% entries from factor data: 表示處理因子數據時，有1.0%的數據被丟棄了。通常是因為因子的數據或價格有缺失或不完整的情況，導致這部分數據無法使用，因而被剔除。
 1.0% in forward returns computation: 說明這 1.0% 的數據是在計算未來收益(forward returns)的過程中被丟棄的。這些數據可能缺失對應的未來收益數據，通常是因為某些日期的價格數據有問題或缺失。
@@ -69,39 +81,43 @@ max_loss is 35.0%, not exceeded: OK!: 這表示設置的 max_loss 參數值是 3
 create_full_tear_sheet(alphalens_factor_data)
 
 
-### Part 2 ###
-with open(
-    utils_folder_path + "/Chapter1/1-2/factors_list.json",
-    "r",
-    encoding="utf-8",
-) as file:
-    result = json.load(file)
+# ### Part 2: 用 factors_list.json 裡的因子###
+# with open(
+#     utils_folder_path + "/Chapter1/1-2/factors_list.json",
+#     "r",
+#     encoding="utf-8",
+# ) as file:
+#     result = json.load(file)
 
-# 從載入的 JSON 文件中提取因子名稱列表，準備進行分析。
-fundamental_features_list = result["fundamental_features"]
-# print(f"將要分析的因子清單：{fundamental_features_list}")
-# print(f"總計有{len(fundamental_features_list)}個因子")
+# # 從載入的 JSON 文件中提取因子名稱列表，準備進行分析。
+# fundamental_features_list = result["fundamental_features"]
+# # print(f"將要分析的因子清單：{fundamental_features_list}")
+# # print(f"總計有{len(fundamental_features_list)}個因子")
 
-"""
-使用 for 迴圈從 FinLab 獲取多個因子的資料。
-將所有因子資料儲存到字典 factors_data_dict 中，鍵為因子名稱，值為對應的因子資料。
-"""
-factors_data_dict = {}
-for factor in fundamental_features_list:
-    factor_data = chap1_utils.get_factor_data(
-        stock_symbols=top_N_stocks,
-        factor_name=factor,
-        trading_days=list(close_price_data.index),
-    )
-    factors_data_dict[factor] = factor_data
-# 使用 Alphalens 進行因子分析
-for fsctor in fundamental_features_list[41:]:
-    print(f"factor: {factor}")
-    alphalens_factor_data = get_clean_factor_and_forward_returns(
-        factor=factors_data_dict[factor].squeeze(),
-        prices=close_price_data,
-        periods=(1,),
-    )
+# """
+# 使用 for 迴圈從 FinLab 獲取多個因子的資料。
+# 將所有因子資料儲存到字典 factors_data_dict 中，鍵為因子名稱，值為對應的因子資料。
+# """
+# factors_data_dict = {}
+# for factor in fundamental_features_list:
+#     factor_data = chap1_utils.get_factor_data(
+#         stock_symbols=top_N_stocks,
+#         factor_name=factor,
+#         trading_days=list(close_price_data.index),
+#     )
+#     factors_data_dict[factor] = factor_data
+# # 使用 Alphalens 進行因子分析
+# for factor_name in fundamental_features_list[41:]:
+#     print(f"factor: {factor_name}")
+#     factor_series = factors_data_dict[factor_name].stack().droplevel(2)
+#     factor_series.index.names = ["date", "asset"]
+#     factor_series = factor_series.rename(lambda x: f"{x}.TW", level="asset")
 
-# 使用 Alphalens 生成完整的因子分析圖表報告
-create_full_tear_sheet(alphalens_factor_data)
+#     alphalens_factor_data = get_clean_factor_and_forward_returns(
+#         factor=factor_series,
+#         prices=close_price_data,
+#         periods=(1,),
+#     )
+
+# # 使用 Alphalens 生成完整的因子分析圖表報告
+# create_full_tear_sheet(alphalens_factor_data)

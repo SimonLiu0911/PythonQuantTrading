@@ -47,13 +47,13 @@ def get_top_stocks_by_market_value(
     company_info = data.get("company_basic_info")[
         ["stock_id", "公司名稱", "上市日期", "產業類別", "市場別"]
     ]
-    # 如果有指定要拍廚的產業類別，則過濾掉這些產業的公司
+    # 如果有指定要排除的產業類別，則過濾掉這些產業的公司
     if excluded_industry:
         # 只保留「產業類別」不在 excluded_industry 裡的列，"~"是取反的意思
         company_info = company_info[~company_info["產業類別"].isin(excluded_industry)]
     # 如果有設定上市日期條件，則過濾掉上市日期晚於指定日期的公司
     if pre_list_date:
-        company_info = company_info[company_info["市場別"] == "sii"]
+        company_info = company_info[company_info["市場別"] == "sii"] # sii: 上市, otc: 上櫃, rotc/emerging: 興櫃
         company_info = company_info[company_info["上市日期"] < pre_list_date]
     # 如果有設定top_n條件，則選取市值前 N 大的公司股票代碼
     if top_n:
@@ -96,6 +96,8 @@ def get_daily_close_prices_data(
     Adj Close: 調整後收盤價，將股票分割和股息等因素考慮進去後的收盤價。
     Volumn: 交易量，表示在該交易日內買賣該股票的總股數。
     """
+    # yfinance 需要 .TW
+    yf_symbols = stock_symbols
     # 如果是台灣股票，則在每個股票代碼後加上".TW"
     if is_tw_stock:
         # new_symbols = []
@@ -106,23 +108,56 @@ def get_daily_close_prices_data(
         #         new_symbols.append(symbol)
         # stock_symbols = new_symbols
         # Optimize
-        stock_symbols = [
+        yf_symbols = [
             f"{symbol}.TW" if ".TW" not in symbol else symbol
             for symbol in stock_symbols
         ]
+    
     # 從 YFinance 下載指定股票在給定日期範圍內的數據，並取出收盤價欄位(Close)的資料
-    stock_data = yf.download(stock_symbols, start=start_date, end=end_date)["Close"]
-    # 如果只取一支股票，將其轉換為 DataFrame 並設定欄位名稱為該股票代碼
-    if len(stock_symbols) == 1:
-        stock_data = pd.DataFrame(stock_data)
-        stock_data.columns = stock_symbols
-    # 使用向前填補方法處理資料中遺失值
-    stock_data = stock_data.ffill()
-    # 將欄位名稱中的 ".TW" 移除，只保留股票代碼
-    print(stock_data.columns) # 1101.TW    1102.TW    1103.TW    1104.TW    1108.TW    1109.TW  ...
-    stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
-    return stock_data
+    stock_data = yf.download(yf_symbols, start=start_date, end=end_date)["Close"]
 
+    # 若 yfinance 是空的(None)，改用FinLab
+    if stock_data is None or stock_data.empty or stock_data.shape[0] == 0:
+        # FinLab 取收盤價（index=日期, columns=股票代碼）
+        close = data.get("price:收盤價") # 因為這邊是 FinlabDataFrame，無法跟 Alphalens 的格式(pd.DateFrame)對齊
+        close = pd.DataFrame(close)
+
+        # FinLab 欄位不含 .TW，所以先把 .TW 去掉再選
+        finlab_symbols = [s.replace(".TW", "") for s in stock_symbols]
+
+        close = close.loc[
+            (close.index >= start_date) & (close.index <= end_date), # 列 (rows)：只保留日期在 start_date 到 end_date 之間的資料（用索引判斷）
+            finlab_symbols # 欄 (columns)：只保留 finlab_symbols 這個清單裡的股票代號欄位
+        ]
+
+        # 轉回「帶 .TW」欄名，跟 yfinance 一致
+        close.columns = [f"{s}.TW" for s in finlab_symbols]
+
+        if len(finlab_symbols) == 1:
+            close = pd.DataFrame(close)
+            close.columns = [f"{finlab_symbols[0]}.TW"]
+
+        return close.ffill()
+
+    # yfinance 成功：統一回 DataFrame
+    stock_data = pd.DataFrame(stock_data)
+
+    # 若單檔時欄名不是 .TW，補上
+    if len(yf_symbols) == 1:
+        stock_data.columns = yf_symbols
+
+    return stock_data.ffill()
+
+    # # 如果只取一支股票，將其轉換為 DataFrame 並設定欄位名稱為該股票代碼
+    # if len(stock_symbols) == 1:
+    #     stock_data = pd.DataFrame(stock_data)
+    #     stock_data.columns = stock_symbols
+    # # 使用向前填補方法處理資料中遺失值
+    # stock_data = stock_data.ffill()
+    # # 將欄位名稱中的 ".TW" 移除，只保留股票代碼
+    # # print(stock_data.columns) # 1101.TW    1102.TW    1103.TW    1104.TW    1108.TW    1109.TW  ...
+    # stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
+    # return stock_data
 
 # def get_factor_data(
 #         stock_symbols: Annotated[list[str], "股票代碼列表"],
