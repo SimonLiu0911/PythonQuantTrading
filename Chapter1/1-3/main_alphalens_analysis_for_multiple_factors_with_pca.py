@@ -32,21 +32,28 @@ close_price_data = chap1_utils.get_daily_close_prices_data(
 
 # 要進行主成份分析的因子列表
 all_factors_list = [
-    "營業利益",
-    "營運現金流",
-    "歸屬母公司淨利",
-    "經常稅後淨利",
     "ROE稅後",
+    "應收帳款週轉率",
+    "歸屬母公司淨利",
+    "營業利益",
     "營業利益成長率",
+    "營運現金流",
     "稅前淨利成長率",
     "稅後淨利成長率",
-    "應收帳款周轉率",
+    "經常稅後淨利",
 ]
 # 取得 FinLab 多個因子資料
 # 將多個因子資料整合(concat)成一個資料集
 factors_data_dict = {}
-print(11111111111, top_N_stocks)
 for factor in all_factors_list:
+    # factor_data = chap1_utils.get_factor_data(
+    #     stock_symbols=top_N_stocks,
+    #     factor_name=factor,
+    #     trading_days=list(close_price_data.index),
+    # )
+    # factor_data = factor_data.reset_index()
+    # factor_data = factor_data.assign(factor_name=factor)
+    # 下方優化上方程式碼，直接在一行內完成資料的取得、重置索引和新增因子名稱欄位的操作
     factor_data = (
         chap1_utils.get_factor_data(
             stock_symbols=top_N_stocks,
@@ -57,6 +64,7 @@ for factor in all_factors_list:
         .assign(factor_name=factor)
     )
     factors_data_dict[factor] = factor_data
+
 # 將所有因子資料合併成一個 DataFrame
 concat_factors_data = pd.concat(factors_data_dict.values(), ignore_index=True)
 # 將資料格式轉換為索引是 datetime 和 asset，欄位名稱是因子名稱
@@ -73,12 +81,20 @@ concat_factors_data.replace([np.inf, -np.inf], np.nan, inplace=True)
 # 首先對因子數據進行標準化處理，以保證每個因子的尺度相同。
 # 這個標準化過程會將每個因子數據的平過值調整為0，標準差調整為1。
 scaler = StandardScaler()
+# 將 concat_factors_data.dropna().values 裡的每個欄位都做標準化(確保每個變數再降維過程中具有享童的尺度)
 scale_concat_factors_data = scaler.fit_transform(concat_factors_data.dropna().values)
 # 設置要提取的主成份數量為 8，這裡選擇了比財報因子數少一個的主成份數量
 pac_components_num = len(all_factors_list) - 1
-print(pac_components_num)
+# print(pac_components_num)
 pca = PCA(n_components=pac_components_num)
-# 對標準化後的資料進行 PCA 分析。
+
+# 對標準化後的資料進行 PCA 分析(PCA 是一種降維技術。它透過線性組合，把原本多個可能互相關聯的變數，轉換成一組新的、彼此獨立的變數，稱為主成分（Principal Components）)。
+"""
+對標準化後的資料做 PCA，實際上是在分析資料的相關係數矩陣(Correlation Matrix)。
+這樣做的目的是：
+公平比較：確保不同單位的特徵（如：金額、百分比、溫度）能被平等對待。
+簡化模型：用少數幾個新變數來解釋大部分的資料特徵，方便後續的視覺化或機器學習
+"""
 principal_components = pca.fit_transform(scale_concat_factors_data)
 # 將原始資料轉換成主成份分析結果表。每一行代表一個主成份。
 principal_df = pd.DataFrame(
