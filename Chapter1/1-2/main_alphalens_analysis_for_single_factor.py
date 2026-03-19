@@ -16,7 +16,10 @@ chap1_utils.finlab_login()
 analysis_period_start_date = "2017-05-16"
 analysis_period_end_date = "2021-05-15"
 
-"""排除指定產業（金融業、金融保險業、存托憑證、建材營造）的股票，並排除上市日期晚於 2017-01-03 的股票"""
+"""
+排除指定產業（金融業、金融保險業、存托憑證、建材營造）的股票，並排除上市日期晚於 2017-01-03 的股票
+避免新上市股票在樣本中途加入，造成資料長度不一致、缺值變多、以及 IPO 初期異常波動干擾因子結果。
+"""
 top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
     excluded_industry=[
         "金融業",

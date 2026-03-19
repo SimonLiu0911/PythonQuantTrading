@@ -58,7 +58,7 @@ def get_top_stocks_by_market_value(
     # 如果有設定top_n條件，則選取市值前 N 大的公司股票代碼
     if top_n:
         # 從 Finlab 取得最新的個股市值數據表，並重設索引名稱為 market_value
-        market_value = pd.DataFrame(data.get("etl:market_value"))
+        market_value = pd.DataFrame(data.get("etl:market_value")) # 回傳一個以日期為 index、股票代號為欄位的表
         market_value = market_value[market_value.index == pre_list_date]
         market_value = market_value.reset_index().melt(
             id_vars="date", var_name="stock_id", value_name="market_value"
@@ -68,9 +68,9 @@ def get_top_stocks_by_market_value(
         company_info = pd.merge(market_value, company_info, on="stock_id").sort_values(
             by="market_value", ascending=False
         )
-        return company_info.head(top_n)["stock_id"].tolist()
+        return company_info.head(top_n)["stock_id"].tolist() # ["2330", "2317", "2454", ...]
     else:
-        return company_info["stock_id"].tolist()
+        return company_info["stock_id"].tolist() # ["1101", "1102", "1216", ...]
 
 
 def get_daily_close_prices_data(
