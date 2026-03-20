@@ -217,6 +217,14 @@ def get_factor_data(
         時間序列資料
         資料獲取方法，就是使用 data.get 函式，傳入：主資料:子資料 的格式，例如price:收盤價。 獲得的資料，其縱軸為日期，橫軸為股票代號，製作選股策略非常方便。
         data.get('price:收盤價')
+    
+    step by step:
+    1) 整理欄名
+    2) 篩選股票
+    3) 如果不要交易日展開，直接回傳寬表
+    4) 如果要交易日展開，reindex + ffill
+    5) melt 成長表
+    6) 設成 MultiIndex
     """
     # 1) 讀因子（假設回傳的是 pandas.DataFrame，index=財報日，columns=股票代碼）
     factor_data = data.get(f"fundamental_features:{factor_name}").deadline()
@@ -254,7 +262,7 @@ def get_factor_data(
     td = pd.DatetimeIndex(pd.to_datetime(list(trading_days))).unique().sort_values()
     out = (
         factor_data.reindex(td)  # 對齊到交易日
-        .ffill()  # 向前填補
+        .ffill()  # 向前填補(不用bfill向後填補是因為不能拿明天或未來的資料去填補，這樣等於是預先看見未來)
         .reset_index()
         .rename(columns={"index": "datetime"})
     )

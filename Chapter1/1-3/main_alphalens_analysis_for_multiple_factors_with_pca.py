@@ -53,6 +53,7 @@ for factor in all_factors_list:
     # )
     # factor_data = factor_data.reset_index()
     # factor_data = factor_data.assign(factor_name=factor)
+
     # 下方優化上方程式碼，直接在一行內完成資料的取得、重置索引和新增因子名稱欄位的操作
     factor_data = (
         chap1_utils.get_factor_data(
@@ -62,8 +63,10 @@ for factor in all_factors_list:
         )
         .reset_index()
         .assign(factor_name=factor)
+        # .dropna()
     )
     factors_data_dict[factor] = factor_data
+    print(f"已取得因子 {factor} 的資料，資料的前 5 行：\n{factor_data.head()}\n")
 
 # 將所有因子資料合併成一個 DataFrame
 concat_factors_data = pd.concat(factors_data_dict.values(), ignore_index=True)
@@ -79,7 +82,7 @@ concat_factors_data.replace([np.inf, -np.inf], np.nan, inplace=True)
 
 # 進行主成份分析。
 # 首先對因子數據進行標準化處理，以保證每個因子的尺度相同。
-# 這個標準化過程會將每個因子數據的平過值調整為0，標準差調整為1。
+# 這個標準化過程會將每個因子數據的平均值調整為0，標準差調整為1。
 scaler = StandardScaler()
 # 將 concat_factors_data.dropna().values 裡的每個欄位都做標準化(確保每個變數再降維過程中具有享童的尺度)
 scale_concat_factors_data = scaler.fit_transform(concat_factors_data.dropna().values)
@@ -101,6 +104,11 @@ principal_df = pd.DataFrame(
     data=principal_components,
     index=concat_factors_data.dropna().index,
     columns=[f"PC{i}" for i in range(1, pac_components_num + 1)],
+)
+# 將 asset 索引重命名為帶 .TW 的格式，與 close_price_data 對齐
+principal_df.index = principal_df.index.set_levels(
+    principal_df.index.levels[1].map(lambda x: f"{x}.TW"),
+    level=1
 )
 # 產生主成份係數表
 loadings = pd.DataFrame(
