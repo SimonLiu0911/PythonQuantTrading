@@ -22,7 +22,7 @@ top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
         "存托憑證",
         "建材營造",
     ],
-    pre_list_date="2017-01-03",
+    pre_list_date="2016-01-01",
 )
 close_price_data = chap1_utils.get_daily_close_prices_data(
     stock_symbols=top_N_stocks,
@@ -71,7 +71,7 @@ for factor in all_factors_list:
 # 將所有因子資料合併成一個 DataFrame
 concat_factors_data = pd.concat(factors_data_dict.values(), ignore_index=True)
 # 將資料格式轉換為索引是 datetime 和 asset，欄位名稱是因子名稱
-# pivot_table 用於將長格式的資料展開轉換為寬格式
+# pivot_table 用於將長格式的資料展開轉換為寬格式(P1-101)
 concat_factors_data = concat_factors_data.pivot_table(
     index=["datetime", "asset"],
     columns="factor_name",

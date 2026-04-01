@@ -27,7 +27,7 @@ top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
         "存托憑證",
         "建材營造",
     ],
-    pre_list_date="2017-01-03",
+    pre_list_date="2016-01-01",
     # top_n=300,
 )
 # print(f"列出市值前 10 大的股票代號：{ top_N_stocks[:10] }")

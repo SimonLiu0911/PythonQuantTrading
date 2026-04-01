@@ -27,7 +27,7 @@ top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
         "存托憑證",
         "建材營造",
     ],
-    pre_list_date="2017-01-03",
+    pre_list_date="2016-01-01",
 )
 
 # 取得指定股票代碼列表在給定日期範圍內的每日 OHLCV 數據(get_daily_price_and_volume_data)
