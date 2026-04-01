@@ -14,7 +14,7 @@ from Chapter1 import utils as chap1_utils  # 這是讀取 Chapter1 下面的 uti
 chap1_utils.finlab_login()
 
 analysis_period_start_date = "2017-05-16"
-analysis_period_end_date = "2021-05-15"
+analysis_period_end_date = "2026-03-31"
 
 """
 排除指定產業（金融業、金融保險業、存托憑證、建材營造）的股票，並排除上市日期晚於 2017-01-03 的股票

@@ -18,7 +18,7 @@ from Chapter1 import utils as chap1_utils # 這是讀取 Chapter1 下面的 util
 chap1_utils.finlab_login()
 
 analysis_period_start_date = "2021-03-16"
-analysis_period_end_date = "2021-05-15"
+analysis_period_end_date = "2026-03-31"
 
 top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
     excluded_industry=[
