@@ -68,28 +68,28 @@ for factor in factors_data_dict:
 pos_corr_factor_pair = list(combinations(pos_corr_factors, 5))
 print(f"總計有 {len(pos_corr_factor_pair)} 組五因子組合")
 
-# # combined_df_dict 用來儲存每個五因子組合的排續結果。
-# combined_df_dict = {}
-# for pair in pos_corr_factor_pair:
-#     combined_df_dict[pair] = chap1_utils.calculate_weighted_rank(
-#         ranked_dfs=[
-#             rank_factors_data_dict[pair[0]],
-#             rank_factors_data_dict[pair[1]],
-#             rank_factors_data_dict[pair[2]],
-#             rank_factors_data_dict[pair[3]],
-#             rank_factors_data_dict[pair[4]],
-#         ],
-#         weights=[0.2, 0.2, 0.2, 0.2, 0.2], # 等權重
-#         positive_corr=True,
-#         rank_column="rank",
-#     ).set_index(['datetime', 'asset'])
+# combined_df_dict 用來儲存每個五因子組合的排續結果。
+combined_df_dict = {}
+for pair in pos_corr_factor_pair:
+    combined_df_dict[pair] = chap1_utils.calculate_weighted_rank(
+        ranked_dfs=[
+            rank_factors_data_dict[pair[0]],
+            rank_factors_data_dict[pair[1]],
+            rank_factors_data_dict[pair[2]],
+            rank_factors_data_dict[pair[3]],
+            rank_factors_data_dict[pair[4]],
+        ],
+        weights=[0.2, 0.2, 0.2, 0.2, 0.2], # 等權重
+        positive_corr=True,
+        rank_column="rank",
+    ).set_index(['datetime', 'asset'])
 
-# # 使用 Alphalens 進行因子分析
-# for pair in combined_df_dict:
-#     print(f"pair: {pair}")
-#     alphalens_factor_data = get_clean_factor_and_forward_returns(
-#         factor=combined_df_dict[pair].squeeze(),
-#         prices=close_price_data,
-#         periods=(1,),
-#     )
-#     create_full_tear_sheet(alphalens_factor_data)
+# 使用 Alphalens 進行因子分析
+for pair in combined_df_dict:
+    print(f"pair: {pair}")
+    alphalens_factor_data = get_clean_factor_and_forward_returns(
+        factor=combined_df_dict[pair].squeeze(),
+        prices=close_price_data,
+        periods=(1,),
+    )
+    create_full_tear_sheet(alphalens_factor_data)
