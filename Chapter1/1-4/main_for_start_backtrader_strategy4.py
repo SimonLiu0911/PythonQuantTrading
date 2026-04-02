@@ -1,5 +1,6 @@
 """範例策略四：移動平均交叉策略"""
 
+# %%
 import backtrader as bt
 import numpy as np
 import yfinance as yf
@@ -53,6 +54,7 @@ class MovingAverageCrossStrategy(bt.Strategy):
         if order.status in [order.Completed]:
             executed_price = np.round(order.executed.price, 3)
             executed_comm = np.round(order.executed.comm, 3)
+            
             if order.isbuy():
                 self.log(
                     f"訂單完成：買入執行，價格：{executed_price}，手續費：{executed_comm}"

@@ -4,7 +4,7 @@
 import backtrader as bt
 import numpy as np
 import yfinance as yf
-
+from datetime import date
 
 class RSIStrategy(bt.Strategy):
     # 定義策略的參數：rsi_period, rsi_low, rsi_high
@@ -37,18 +37,24 @@ class RSIStrategy(bt.Strategy):
         if order.status in [order.Completed]:  # if order.status == order.Completed:
             executed_price = np.round(order.executed.price, 3)
             executed_comm = np.round(order.executed.comm, 3)
+
             if order.isbuy():
                 self.log(f"訂單完成：買入執行，價格：{executed_price}，手續費：{executed_comm}")
             elif order.issell():
                 self.log(f"訂單完成：賣出執行，價格：{executed_price}，手續費：{executed_comm}")
-cerebro = bt.Cerebro()
-cerebro.addstrategy(RSIStrategy)
+
+
 asset = "0050.TW"
+start_date = "2011-01-01"
+end_date = date.today().strftime("$Y-%m-%d")
 data = bt.feeds.PandasData(
-    dataname=yf.download(asset, "2011-01-01", "2025-11-24").droplevel("Ticker", axis=1)[
+    dataname=yf.download(asset, start=start_date, end=end_date).droplevel("Ticker", axis=1)[
         ["Open", "High", "Low", "Close", "Volume"]
     ]
 )
+
+cerebro = bt.Cerebro()
+cerebro.addstrategy(RSIStrategy)
 cerebro.adddata(data)
 cerebro.broker.setcash(10000)
 cerebro.broker.setcommission(commission=0.0015)

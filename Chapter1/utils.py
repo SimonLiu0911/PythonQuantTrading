@@ -1,7 +1,7 @@
-from __future__ import annotations
 import os, finlab
 import yfinance as yf
 import pandas as pd
+from pathlib import Path
 from dotenv import load_dotenv
 from typing_extensions import Annotated
 from typing import Tuple, Iterable, Annotated
@@ -10,14 +10,20 @@ from finlab import data
 # current_folder = os.path.dirname(__file__) # 目前程式檔案所在的資料夾相對路徑
 # parent_folder = os.path.dirname(current_folder) # 目前程式檔案所在的資料夾的上一層資料夾路徑
 
+def get_parent_dir(levels=1):
+    return Path(__file__).parent.relative_to(Path(__file__).anchor) if levels == 0 else Path(__file__).parents[levels - 1]
+
 
 def finlab_login() -> None:
     """
     函式說明：使用 FinLab API token 登入 FinLab
     """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_folder = os.path.dirname(current_dir)
-    # parent_parent_folder = os.path.dirname(parent_folder)
+    # current_dir = os.path.dirname(os.path.abspath(__file__))
+    # parent_folder = os.path.dirname(current_dir)
+    # # parent_parent_folder = os.path.dirname(parent_folder)
+
+    parent_folder = get_parent_dir(2)
+
     # 載入 .env 檔案中定義的變數
     load_dotenv(f"{parent_folder}/.env")
     # 取得儲存在 .env 檔案中 FINLAB API Token
@@ -41,18 +47,18 @@ def get_top_stocks_by_market_value(
     company_info = data.get("company_basic_info")[
         ["stock_id", "公司名稱", "上市日期", "產業類別", "市場別"]
     ]
-    # 如果有指定要拍廚的產業類別，則過濾掉這些產業的公司
+    # 如果有指定要排除的產業類別，則過濾掉這些產業的公司
     if excluded_industry:
         # 只保留「產業類別」不在 excluded_industry 裡的列，"~"是取反的意思
         company_info = company_info[~company_info["產業類別"].isin(excluded_industry)]
     # 如果有設定上市日期條件，則過濾掉上市日期晚於指定日期的公司
     if pre_list_date:
-        company_info = company_info[company_info["市場別"] == "sii"]
+        company_info = company_info[company_info["市場別"] == "sii"] # sii: 上市, otc: 上櫃, rotc/emerging: 興櫃
         company_info = company_info[company_info["上市日期"] < pre_list_date]
     # 如果有設定top_n條件，則選取市值前 N 大的公司股票代碼
     if top_n:
         # 從 Finlab 取得最新的個股市值數據表，並重設索引名稱為 market_value
-        market_value = pd.DataFrame(data.get("etl:market_value"))
+        market_value = pd.DataFrame(data.get("etl:market_value")) # 回傳一個以日期為 index、股票代號為欄位的表
         market_value = market_value[market_value.index == pre_list_date]
         market_value = market_value.reset_index().melt(
             id_vars="date", var_name="stock_id", value_name="market_value"
@@ -62,9 +68,9 @@ def get_top_stocks_by_market_value(
         company_info = pd.merge(market_value, company_info, on="stock_id").sort_values(
             by="market_value", ascending=False
         )
-        return company_info.head(top_n)["stock_id"].tolist()
+        return company_info.head(top_n)["stock_id"].tolist() # ["2330", "2317", "2454", ...]
     else:
-        return company_info["stock_id"].tolist()
+        return company_info["stock_id"].tolist() # ["1101", "1102", "1216", ...]
 
 
 def get_daily_close_prices_data(
@@ -90,6 +96,8 @@ def get_daily_close_prices_data(
     Adj Close: 調整後收盤價，將股票分割和股息等因素考慮進去後的收盤價。
     Volumn: 交易量，表示在該交易日內買賣該股票的總股數。
     """
+    # yfinance 需要 .TW
+    yf_symbols = stock_symbols
     # 如果是台灣股票，則在每個股票代碼後加上".TW"
     if is_tw_stock:
         # new_symbols = []
@@ -100,23 +108,56 @@ def get_daily_close_prices_data(
         #         new_symbols.append(symbol)
         # stock_symbols = new_symbols
         # Optimize
-        stock_symbols = [
+        yf_symbols = [
             f"{symbol}.TW" if ".TW" not in symbol else symbol
             for symbol in stock_symbols
         ]
+    
     # 從 YFinance 下載指定股票在給定日期範圍內的數據，並取出收盤價欄位(Close)的資料
-    stock_data = yf.download(stock_symbols, start=start_date, end=end_date)["Close"]
-    # 如果只取一支股票，將其轉換為 DataFrame 並設定欄位名稱為該股票代碼
-    if len(stock_symbols) == 1:
-        stock_data = pd.DataFrame(stock_data)
-        stock_data.columns = stock_symbols
-    # 使用向前填補方法處理資料中遺失值
-    stock_data = stock_data.ffill()
-    # 將欄位名稱中的 ".TW" 移除，只保留股票代碼
-    # print(stock_data.columns) # 1101.TW    1102.TW    1103.TW    1104.TW    1108.TW    1109.TW  ...
-    stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
-    return stock_data
+    stock_data = yf.download(yf_symbols, start=start_date, end=end_date)["Close"]
 
+    # 若 yfinance 是空的(None)，改用FinLab
+    if stock_data is None or stock_data.empty or stock_data.shape[0] == 0:
+        # FinLab 取收盤價（index=日期, columns=股票代碼）
+        close = data.get("price:收盤價") # 因為這邊是 FinlabDataFrame，無法跟 Alphalens 的格式(pd.DateFrame)對齊
+        close = pd.DataFrame(close)
+
+        # FinLab 欄位不含 .TW，所以先把 .TW 去掉再選
+        finlab_symbols = [s.replace(".TW", "") for s in stock_symbols]
+
+        close = close.loc[
+            (close.index >= start_date) & (close.index <= end_date), # 列 (rows)：只保留日期在 start_date 到 end_date 之間的資料（用索引判斷）
+            finlab_symbols # 欄 (columns)：只保留 finlab_symbols 這個清單裡的股票代號欄位
+        ]
+
+        # 轉回「帶 .TW」欄名，跟 yfinance 一致
+        close.columns = [f"{s}.TW" for s in finlab_symbols]
+
+        if len(finlab_symbols) == 1:
+            close = pd.DataFrame(close)
+            close.columns = [f"{finlab_symbols[0]}.TW"]
+
+        return close.ffill()
+
+    # yfinance 成功：統一回 DataFrame
+    stock_data = pd.DataFrame(stock_data)
+
+    # 若單檔時欄名不是 .TW，補上
+    if len(yf_symbols) == 1:
+        stock_data.columns = yf_symbols
+
+    return stock_data.ffill()
+
+    # # 如果只取一支股票，將其轉換為 DataFrame 並設定欄位名稱為該股票代碼
+    # if len(stock_symbols) == 1:
+    #     stock_data = pd.DataFrame(stock_data)
+    #     stock_data.columns = stock_symbols
+    # # 使用向前填補方法處理資料中遺失值
+    # stock_data = stock_data.ffill()
+    # # 將欄位名稱中的 ".TW" 移除，只保留股票代碼
+    # # print(stock_data.columns) # 1101.TW    1102.TW    1103.TW    1104.TW    1108.TW    1109.TW  ...
+    # stock_data.columns = stock_data.columns.str.replace(".TW", "", regex=False)
+    # return stock_data
 
 # def get_factor_data(
 #         stock_symbols: Annotated[list[str], "股票代碼列表"],
@@ -176,6 +217,14 @@ def get_factor_data(
         時間序列資料
         資料獲取方法，就是使用 data.get 函式，傳入：主資料:子資料 的格式，例如price:收盤價。 獲得的資料，其縱軸為日期，橫軸為股票代號，製作選股策略非常方便。
         data.get('price:收盤價')
+    
+    step by step:
+    1) 整理欄名
+    2) 篩選股票
+    3) 如果不要交易日展開，直接回傳寬表
+    4) 如果要交易日展開，reindex + ffill
+    5) melt 成長表
+    6) 設成 MultiIndex
     """
     # 1) 讀因子（假設回傳的是 pandas.DataFrame，index=財報日，columns=股票代碼）
     factor_data = data.get(f"fundamental_features:{factor_name}").deadline()
@@ -213,7 +262,7 @@ def get_factor_data(
     td = pd.DatetimeIndex(pd.to_datetime(list(trading_days))).unique().sort_values()
     out = (
         factor_data.reindex(td)  # 對齊到交易日
-        .ffill()  # 向前填補
+        .ffill()  # 向前填補(不用bfill向後填補是因為不能拿明天或未來的資料去填補，這樣等於是預先看見未來)
         .reset_index()
         .rename(columns={"index": "datetime"})
     )
@@ -256,26 +305,6 @@ def extend_factor_data(
     ]
     return extended_data
 
-
-def convert_quarter_to_date(
-    quarter: Annotated[str, "年-季度字串，例如：2013-01"],
-) -> Annotated[Tuple[str, str], "季度對應的起始和結束日期字串"]:
-    """
-    函式說明：
-    將季度字串(quarter)轉換為起始和結束日期字串。
-    ex: 2013-Q1 -> 2013-05-16, 2013-08-14
-    """
-    year, qtr = quarter.split("-")
-    if qtr == "Q1":
-        return f"{year}-05-16", f"{year}-08-14"
-    if qtr == "Q2":
-        return f"{year}-06-15", f"{year}-11-14"
-    if qtr == "Q3":
-        return f"{year}-11-15", f"{int(year) + 1}-03-31"
-    if qtr == "Q4":
-        return f"{int(year) + 1}-04-01", f"{int(year) + 1}-05-15"
-
-
 def convert_date_to_quarter(
     date: Annotated[str, "日期字串，格式為 YYYY-MM-DD"],
 ) -> Annotated[str, "對應的季度字串"]:
@@ -317,15 +346,15 @@ def rank_stocks_by_factor(
     rank_column: Annotated[str, "用於排序的欄位名稱"],
     rank_result_column: Annotated[str, "保存排序結果的欄位名稱"] = "rank",
 ) -> Annotated[
-    pd.Dateframe,
-    "包含排序結果的因子資料表",
+    pd.DataFrame,
+    "包含排序結果的資料表",
     "欄位名稱含asset(股票代碼欄位)、datetime(日期欄位)、value(因子值欄位)、rank(排序結果欄位)",
 ]:
     """
     函式說明：
     根據某個指定因子的值(rank_column)對股票進行排序，遞增或遞減排序方式取決於因子與未來收益的相關性(positive_corr)。
-    如果相關性為正，則將股票案因子值由小到大排序；如果相關性為負，則將股票按因子值由大到小排序。
-    最後，將排序結果新增至原因子資料表中，且指定排序結果欄位名稱為 rank_result_column。
+    如果相關性為正，則將股票按因子值由小到大排序；如果相關性為負，則將股票按因子值由大到小排序。
+    最後，將排序結果新增至原始因子資料表中，且指定排序結果欄位名稱為 rank_result_column。
     """
     # 複製因子資料表，以避免對原資料進行修改
     ranked_df = factor_df.copy()
@@ -384,11 +413,12 @@ def calculate_weighted_rank(
                 on=["datetime", "asset"],
                 how="outer",
             )
-    # 將合併後的資料中遺失的值刪除
+    # 將合併後的資料中遺失值刪除
     combined_ranks = combined_ranks.dropna()
     # 最後，將所有乘上權重的排名進行每個股票每日的加總，得到最終的加權排名結果
     combined_ranks["weighted"] = combined_ranks.filter(like="rank_").sum(axis=1)
     # 根據加權總分計算最終的股票排名
+    # 使用 rank_stocks_by_factor 函數對加權排名結果進行排序
     ranked_df = rank_stocks_by_factor(
         factor_df=combined_ranks,
         positive_corr=positive_corr,

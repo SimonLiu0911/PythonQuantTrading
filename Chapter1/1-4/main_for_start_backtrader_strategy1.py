@@ -1,26 +1,29 @@
 # %%
 """範例策略一：印出交易日當天和前一天的開盤價和收盤價"""
 
+"""
+此策略的功能是每天印出「當天和前一天的開盤價與收盤價」
+"""
+
 import backtrader as bt
 from pathlib import Path
 
 # 定義一個策略類別，印出交易日當天和前一天的開盤價和收盤價
-
 class PrintDataStrategy(bt.Strategy):
-    # 初始化方法，在策略開始時執行，用於設置指標，包含定義策略會使用到的參數
-    def __init__(self):
-        d=self.datas[0]
-        print(
-            d.datetime.date(0), # 2020-01-08
-            d.open[0], # 74.29
-            d.high[0], # 76.11
-            d.low[0], # 74.29
-            d.close[0], # 75.8
-            d.volume[0], # 132079200.0
-        )
-    # next 方法會在每個時間點被執行
+    # # 初始化方法，在策略開始時執行，用於設置指標，包含定義策略會使用到的參數
+    # def __init__(self):
+    #     d=self.datas[0]
+    #     print(
+    #         d.datetime.date(0), # 2020-01-08
+    #         d.open[0], # 74.29
+    #         d.high[0], # 76.11
+    #         d.low[0], # 74.29
+    #         d.close[0], # 75.8
+    #         d.volume[0], # 132079200.0
+    #     )
+    # # next 方法會在每個時間點被執行
     def next(self):
-        # self.datas[0] 代表第一個數據集（即第一隻股票）
+        # self.datas[0] 代表第一個數據集（即第一支股票）
         date = self.datas[0].datetime.date(0)  # 取得當前交易日的日期
         close = self.datas[0].close[0]  # 取得當前交易日的收盤價
         open = self.datas[0].open[0]  # 取得當前交易日的開盤價
@@ -59,7 +62,7 @@ data = bt.feeds.GenericCSVData(
     volume=5,
     openinterest=-1,
     dtformat=("%Y/%m/%d"),
-    headers=True,
+    headers=True, # 第一行是標題列，不算資料，讀檔時會跳過
 )
 
 cerebro = bt.Cerebro()  # 初始化回測引擎
