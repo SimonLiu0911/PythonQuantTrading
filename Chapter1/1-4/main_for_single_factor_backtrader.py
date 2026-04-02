@@ -35,31 +35,39 @@ all_stock_data = chap1_utils.get_daily_OHLCV_data(
     start_date=analysis_period_start_date,
     end_date=analysis_period_end_date,
 )
-print(all_stock_data)
+
 all_stock_data["datetime"] = all_stock_data["datetime"].astype(str)
 all_stock_data["asset"] = all_stock_data["asset"].astype(str)
 # 指定各個季度下要使用來排序的因子
 # name 對應的是每個季度的因子名稱
 # corr 對應的是因子值與未來收益的關係（根據單因子 Alphalens 分析結果）
 select_rank_factor_dict = {
-    "2017-Q1": {"name": "稅後淨利成長率", "corr": True},
-    "2017-Q2": {"name": "稅後淨利成長率", "corr": True},
-    "2017-Q3": {"name": "稅後淨利成長率", "corr": True},
-    "2017-Q4": {"name": "稅後淨利成長率", "corr": True},
-    "2018-Q1": {"name": "稅前淨利成長率", "corr": True},
-    "2018-Q2": {"name": "稅前淨利成長率", "corr": True},
-    "2018-Q3": {"name": "稅前淨利成長率", "corr": True},
-    "2018-Q4": {"name": "稅前淨利成長率", "corr": True},
-    "2019-Q1": {"name": "稅後淨利成長率", "corr": True},
-    "2019-Q2": {"name": "稅後淨利成長率", "corr": True},
-    "2019-Q3": {"name": "稅後淨利成長率", "corr": True},
-    "2019-Q4": {"name": "稅後淨利成長率", "corr": True},
-    "2020-Q1": {"name": "稅前淨利成長率", "corr": True},
-    "2020-Q2": {"name": "稅前淨利成長率", "corr": True},
-    "2020-Q3": {"name": "稅前淨利成長率", "corr": True},
-    "2020-Q4": {"name": "稅前淨利成長率", "corr": True},
+    "2021-Q1": {"name": "稅後淨利成長率", "corr": True},
+    "2021-Q2": {"name": "稅後淨利成長率", "corr": True},
+    "2021-Q3": {"name": "稅後淨利成長率", "corr": True},
+    "2021-Q4": {"name": "稅後淨利成長率", "corr": True},
+    "2022-Q1": {"name": "稅前淨利成長率", "corr": True},
+    "2022-Q2": {"name": "稅前淨利成長率", "corr": True},
+    "2022-Q3": {"name": "稅前淨利成長率", "corr": True},
+    "2022-Q4": {"name": "稅前淨利成長率", "corr": True},
+    "2023-Q1": {"name": "稅後淨利成長率", "corr": True},
+    "2023-Q2": {"name": "稅後淨利成長率", "corr": True},
+    "2023-Q3": {"name": "稅後淨利成長率", "corr": True},
+    "2023-Q4": {"name": "稅後淨利成長率", "corr": True},
+    "2024-Q1": {"name": "稅前淨利成長率", "corr": True},
+    "2024-Q2": {"name": "稅前淨利成長率", "corr": True},
+    "2024-Q3": {"name": "稅前淨利成長率", "corr": True},
+    "2024-Q4": {"name": "稅前淨利成長率", "corr": True},
+    "2025-Q1": {"name": "稅後淨利成長率", "corr": True},
+    "2025-Q2": {"name": "稅後淨利成長率", "corr": True},
+    "2025-Q3": {"name": "稅後淨利成長率", "corr": True},
+    "2025-Q4": {"name": "稅後淨利成長率", "corr": True},
+    "2026-Q1": {"name": "稅前淨利成長率", "corr": True},
+    "2026-Q2": {"name": "稅前淨利成長率", "corr": True},
+    "2026-Q3": {"name": "稅前淨利成長率", "corr": True},
+    "2026-Q4": {"name": "稅前淨利成長率", "corr": True},
 }
-# 準備因子數據，將個季度的因子數據進行排序。
+# 準備因子數據，將各季度的因子數據進行排序。
 all_factor_data = pd.DataFrame()
 
 print(11111, all_factor_data)
@@ -92,14 +100,57 @@ for quarter, factor in select_rank_factor_dict.items():
     ).drop(columns=["value"])
     # 合併該季度的因子數據
     all_factor_data = pd.concat([all_factor_data, quarter_factor_data])
+
+# Convert index to columns if 'asset' or 'datetime' are in the index
+all_factor_data = all_factor_data.reset_index(drop=False)
+
+# %%
+# DEBUG: Check all_factor_data structure before string conversion
+print("\nDEBUG - all_factor_data columns:", all_factor_data.columns.tolist())
+print("DEBUG - all_factor_data index:", all_factor_data.index.names)
+print("DEBUG - all_factor_data shape:", all_factor_data.shape)
+print("DEBUG - first few rows:")
+print(all_factor_data.head())
+
+# Clean up column names - handle any 'level_0', 'level_1' from reset_index
+all_factor_data.columns = all_factor_data.columns.str.replace('level_0', 'index', regex=False)
+all_factor_data.columns = all_factor_data.columns.str.replace('level_1', 'asset', regex=False)
+
+# If index column exists, rename to asset
+if 'index' in all_factor_data.columns and 'asset' not in all_factor_data.columns:
+    all_factor_data = all_factor_data.rename(columns={'index': 'asset'})
+
+# Remove 'index' column if it exists (from reset_index)
+if 'index' in all_factor_data.columns:
+    all_factor_data = all_factor_data.drop(columns=['index'], errors='ignore')
+
 # 重設索引並將日期與股票代碼轉換為字串格式
-all_factor_data = all_factor_data.reset_index(drop=True)
 all_factor_data["datetime"] = all_factor_data["datetime"].astype(str)
 all_factor_data["asset"] = all_factor_data["asset"].astype(str)
+
+#%%
+# DEBUG: Before merge - check both dataframes
+print("\n=== DEBUG BEFORE MERGE ===")
+print("all_stock_data columns:", all_stock_data.columns.tolist())
+print("all_stock_data shape:", all_stock_data.shape)
+print("all_stock_data head:")
+print(all_stock_data.head())
+
+print("\nall_factor_data columns:", all_factor_data.columns.tolist())
+print("all_factor_data shape:", all_factor_data.shape)
+print("all_factor_data head:")
+print(all_factor_data.head())
+
 # 將因子數據與股價數據進行合併
 all_stock_and_all_factor_data = pd.merge(
     all_stock_data, all_factor_data, on=["datetime", "asset"], how="outer"
 )
+print("\n=== DEBUG AFTER MERGE ===")
+print("all_stock_and_all_factor_data columns:", all_stock_and_all_factor_data.columns.tolist())
+print("all_stock_and_all_factor_data shape:", all_stock_and_all_factor_data.shape)
+print(all_stock_and_all_factor_data)
+
+#%%
 # 站股票代碼和日期排序並填補遺失值
 all_stock_and_all_factor_data = (
     all_stock_and_all_factor_data.sort_values(by=["asset", "datetime"])
@@ -107,6 +158,15 @@ all_stock_and_all_factor_data = (
     .apply(lambda group: group.ffill())
     .reset_index(drop=True)
 )
+
+# DEBUG: Check columns and shape after merge
+print("Columns in all_stock_and_all_factor_data:", all_stock_and_all_factor_data.columns.tolist())
+print("Shape:", all_stock_and_all_factor_data.shape)
+print("First few rows:")
+print(all_stock_and_all_factor_data.head())
+print(all_stock_and_all_factor_data)
+
+# %%
 # 定義回測資料格式，新增排名資料
 class PanadasDataWithRank(bt.feeds.PandasData):
     params = (
@@ -188,16 +248,30 @@ cerebro.addstrategy(
 )
 # 依序加入每檔股票的數據到回測引擎中
 stock_list = list(set(all_stock_and_all_factor_data["asset"]))
+feeds_added = 0
+_debug_printed = False
 for stock in stock_list:
     data = all_stock_and_all_factor_data[all_stock_and_all_factor_data["asset"] == stock]
-    data = data.drop(columns=["asset", "factor_name"])  # 移除不必要欄位
+    data = data.drop(columns=["asset", "factor_name"], errors="ignore")  # 移除不必要欄位
     data["datetime"] = pd.to_datetime(data["datetime"])  # 日期欄位轉為 datetime 格式
-    data = data.dropna().sort_values(by=["datetime"]).reset_index(drop=True)
+    data = data.sort_values(by=["datetime"]).reset_index(drop=True)
+    if not _debug_printed:
+        print(f"[DEBUG] {stock} before dropna — shape={data.shape}, columns={data.columns.tolist()}")
+        print(data.head(10).to_string())
+        print(f"[DEBUG] NaN counts:\n{data.isna().sum()}")
+        _debug_printed = True
+    data = data.dropna()
     if data.empty:
-        # 無資料的股票不加入，避免 backtrader 在分析器階段索引越界
+        print(f"[WARN] {stock}: no valid rows after dropna, skipping")
         continue
+    print(f"[INFO] {stock}: {len(data)} rows, columns={data.columns.tolist()}")
     data = PanadasDataWithRank(dataname=data)  # 使用自訂的數據格式 PanadasDataWithRank
     cerebro.adddata(data, name=stock)  # 加入數據到回測引擎
+    feeds_added += 1
+
+if feeds_added == 0:
+    raise RuntimeError("No data feeds were added to cerebro. Check the data pipeline above.")
+print(f"[INFO] Total feeds added: {feeds_added}")
 
 # 設定初始資金為 200 萬元
 cerebro.broker.set_cash(200_0000)

@@ -427,31 +427,87 @@ def get_daily_OHLCV_data(
     """
     函式說明：
     取得指定股票(stock_symbols)在給定日期範圍內(stock_date ~ end_date)的每日價量資料。
+    優先從 YFinance 下載，若失敗則改用 FinLab。
     """
+    # yfinance 需要 .TW
+    yf_symbols = stock_symbols
     # 如果是台灣股票，則在股票代碼後加上".TW"
     if is_tw_stock:
-        stock_symbols = [
+        yf_symbols = [
             f"{symbol}.TW" if ".TW" not in symbol else symbol
             for symbol in stock_symbols
         ]
-    # 使用 pd.concat 合併多隻股票的數據
-    all_stock_data = pd.concat(
-        [
-            # 從 YFinance 下載每隻股票在指定日期範圍內的數據
-            pd.DataFrame(yf.download(symbol, start=start_date, end=end_date)).droplevel(
-                "Ticker", axis=1
-            )
-            # 新增一個 "asset" 的欄位，用來儲存股票代碼
-            .assign(asset=symbol.split(".")[0])
-            # 重設索引並將日期欄位名稱從 Date 改為 datetime
-            .reset_index().rename(columns={"Date": "datetime"})
-            # 使用向前填補的方法處理資料中的遺失值
-            .ffill()
-            for symbol in stock_symbols
+
+    # 【步驟 1】嘗試從 YFinance 下載
+    all_stock_data = None
+    try:
+        all_stock_data = pd.concat(
+            [
+                # 從 YFinance 下載每隻股票在指定日期範圍內的數據
+                pd.DataFrame(yf.download(symbol, start=start_date, end=end_date)).droplevel(
+                    "Ticker", axis=1
+                )
+                # 新增一個 "asset" 的欄位，用來儲存股票代碼
+                .assign(asset=symbol.split(".")[0])
+                # 重設索引並將日期欄位名稱從 Date 改為 datetime
+                .reset_index().rename(columns={"Date": "datetime"})
+                # 使用向前填補的方法處理資料中的遺失值
+                .ffill()
+                for symbol in yf_symbols
+            ]
+        )
+    except Exception as e:
+        print(f"[warn] YFinance 下載失敗: {e}")
+        all_stock_data = None
+
+    # 【步驟 2】若 YFinance 成功，回傳
+    if all_stock_data is not None and not all_stock_data.empty and all_stock_data.shape[0] > 0:
+        all_stock_data.columns.name = None
+        all_stock_data = all_stock_data[
+            ["Open", "High", "Low", "Close", "Volume", "datetime", "asset"]
         ]
-    )
-    all_stock_data.columns.name = None
-    all_stock_data = all_stock_data[
-        ["Open", "High", "Low", "Close", "Volume", "datetime", "asset"]
-    ]
-    return all_stock_data.reset_index(drop=True)
+        return all_stock_data.reset_index(drop=True)
+
+    # 【步驟 3】YFinance 失敗，改用 FinLab
+    print("[info] 改用 FinLab 取得 OHLCV 資料")
+    
+    price_fields = {
+        "Open": "price:開盤價",
+        "High": "price:最高價",
+        "Low": "price:最低價",
+        "Close": "price:收盤價",
+        "Volume": "price:成交量"
+    }
+    
+    # 移除股票代碼中的 ".TW" 後綴，因為 FinLab 不需要
+    finlab_symbols = [s.replace(".TW", "") for s in yf_symbols]
+    
+    # 提取各個價量欄位
+    ohlcv_data = {}
+    for field_name, finlab_field in price_fields.items():
+        price_df = pd.DataFrame(data.get(finlab_field))
+        # 篩選日期範圍和股票代碼
+        price_df = price_df.loc[
+            (price_df.index >= start_date) & (price_df.index <= end_date),
+            finlab_symbols
+        ]
+        ohlcv_data[field_name] = price_df
+
+    # 將寬表格式轉換為長表格式 (datetime, asset, OHLCV)
+    result = []
+    for date in ohlcv_data['Close'].index:
+        for asset in ohlcv_data['Close'].columns:
+            result.append({
+                'datetime': date,
+                'asset': asset,
+                'Open': ohlcv_data['Open'].loc[date, asset],
+                'High': ohlcv_data['High'].loc[date, asset],
+                'Low': ohlcv_data['Low'].loc[date, asset],
+                'Close': ohlcv_data['Close'].loc[date, asset],
+                'Volume': ohlcv_data['Volume'].loc[date, asset],
+            })
+
+    result_df = pd.DataFrame(result)
+    result_df = result_df[["datetime", "asset", "Open", "High", "Low", "Close", "Volume"]]
+    
+    return result_df.reset_index(drop=True)
