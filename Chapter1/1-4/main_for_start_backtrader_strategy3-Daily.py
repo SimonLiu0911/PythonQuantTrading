@@ -86,6 +86,7 @@ class DailyInvestmentStrategy(bt.Strategy):
         if size > 0:
             self.order = self.buy(size=size)
             self.log(f"每日定投買入 size={size}, 價格={np.round(price, 2)}")
+
 current_folder = os.path.dirname(__file__)
 data = bt.feeds.GenericCSVData(
     dataname=os.path.join(current_folder, "stock_data_examples.csv"),

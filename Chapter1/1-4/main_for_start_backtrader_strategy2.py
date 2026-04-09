@@ -17,6 +17,16 @@ import backtrader as bt
 import numpy as np
 
 
+"""
+init(): 初始化交易策略，包含定義策略會使用到的參數。
+next(): 定義策略邏輯的函式。
+log(): 定義回測執行過程中要輸出的內容，可以幫助我們了解策略執行的狀態。
+notify_order(): 追蹤訂單的狀態，「訂單狀態」變化時自動觸發。訂單狀態包含了提交、接受、完成、取消、拒絕等狀態。
+notify_trade(): 追蹤交易的狀態，「交易狀態」變化時自動觸發。任何已經平倉的交易都可以在這個方法裡面顯示利潤。
+buy(): 建立一個買入訂單，但還沒執行，會在下一個交易時間點執行買入動作。關於訂單的執行狀態可以透過 notify_order 來得知。
+sell(): 建立一個賣出訂單，但還沒執行，會在下一個交易時間點執行賣出動作。關於訂單的執行狀態可以透過 notify_order 來得知。
+"""
+
 class OpenCloseStrategy(bt.Strategy):
     def __init__(self):
         """設置指標，包含定義策略會使用到的參數"""
@@ -24,8 +34,8 @@ class OpenCloseStrategy(bt.Strategy):
         self.close = self.datas[0].close  # 取得第一個數據集的收盤價
         self.open = self.datas[0].open  # 取得第一個數據集的開盤價資料
 
+    """記錄策略日誌的函數"""
     def log(self, txt, dt=None):
-        """記錄策略日誌的函數"""
         # 如果沒有指定日期，則預設為當前交易日日期
         dt = dt or self.datas[0].datetime.date(0)
         print(f"{dt.isoformat()} {txt}")
@@ -62,10 +72,12 @@ class OpenCloseStrategy(bt.Strategy):
                 self.log(
                     f"訂單已完成：買入執行, 價格：{executed_price}, 手續費：{executed_comm}"
                 )
+                print("-----------------------------------")
             elif order.issell():
                 self.log(
                     f"訂單已完成：賣出執行, 價格：{executed_price}, 手續費：{executed_comm}"
                 )
+                print("-----------------------------------")
 
     def notify_trade(self, trade):
         """交易通知處理"""

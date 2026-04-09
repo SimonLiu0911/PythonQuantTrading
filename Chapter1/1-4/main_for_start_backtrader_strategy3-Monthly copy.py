@@ -1,6 +1,7 @@
-"""範例策略：每月 1 號定期定額買入 0050，單筆 10,000 元，回測區間 2020/1/1 ~ 2025/12/12."""
+"""範例策略：每月 1 號定期定額買入 0050，單筆 10,000 元，回測區間 2020/1/1 ~ 2026/4/9"""
 
 import datetime as dt
+import os
 import backtrader as bt
 import pandas as pd
 import yfinance as yf
@@ -11,7 +12,7 @@ class MonthlyDCA(bt.Strategy):
         investment_amount=10_000,  # 每月投入金額
         investment_day=1,  # 每月幾號下單
         start_date=dt.date(2020, 1, 1),
-        end_date=dt.date(2025, 12, 12),
+        end_date=dt.date(2026, 4, 9),
     )
 
     def __init__(self):
@@ -64,23 +65,30 @@ class MonthlyDCA(bt.Strategy):
 
 
 def run():
-    symbol = "0050.TW"
+    symbol = "0050.TWO"
     start = "2020-01-01"
-    end = "2025-12-12"
+    end = "2026-04-09"
 
-    # 下載 0050 價格，若已經有本地檔可自行替換掉下載部分
-    df = yf.download(symbol, start=start, end=end)
-    if df.empty:
-        raise SystemExit("下載不到 0050 資料，請確認網路或資料源。")
+    cache_file = f"{symbol.replace('.', '_')}_{start}_{end}.csv"
+    if os.path.exists(cache_file):
+        df = pd.read_csv(cache_file, index_col=0, parse_dates=True)
+    else:
+        df = yf.download(symbol, start=start, end=end)
+        if df.empty:
+            raise SystemExit("下載不到 0050 資料，請確認網路或資料源。")
+        df.to_csv(cache_file)
 
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    
     df = df.dropna()
     data_feed = bt.feeds.PandasData(dataname=df)
 
     cerebro = bt.Cerebro()
     cerebro.adddata(data_feed)
     cerebro.addstrategy(MonthlyDCA)
-    cerebro.broker.setcash(0)  # 從零開始，每月投入現金
-    cerebro.broker.setcommission(commission=0.0015)
+    cerebro.broker.setcash(1)  # 不可為 0，否則 broker 內部 fund 計算會除以零
+    cerebro.broker.setcommission(commission=0.000399) # 國泰手續費：公定手續費率再打 28 折，亦即 0.1425%*0.28 ≈ 0.000399
 
     cerebro.run()
     cerebro.plot(style="candlestick")
@@ -88,3 +96,4 @@ def run():
 
 if __name__ == "__main__":
     run()
+
