@@ -65,7 +65,7 @@ class MonthlyDCA(bt.Strategy):
 
 
 def run():
-    symbol = "0050.TWO"
+    symbol = "0050.TW"
     start = "2020-01-01"
     end = "2026-04-09"
 
