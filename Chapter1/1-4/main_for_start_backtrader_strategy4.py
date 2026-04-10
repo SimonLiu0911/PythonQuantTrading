@@ -5,6 +5,7 @@ import backtrader as bt
 import numpy as np
 import yfinance as yf
 import pandas as pd
+from datetime import date
 
 
 class MovingAverageCrossStrategy(bt.Strategy):
@@ -84,7 +85,9 @@ class MovingAverageCrossStrategy(bt.Strategy):
 cerebro = bt.Cerebro()
 cerebro.addstrategy(MovingAverageCrossStrategy)
 asset = "00631L.TW"
-raw = yf.download(asset, "2023-10-01", "2026-03-26", auto_adjust=True)
+start_date = "2011-01-01"
+end_date = date.today().strftime("%Y-%m-%d")
+raw = yf.download(asset, start_date, end_date, auto_adjust=True)
 # yfinance 可能回傳 MultiIndex 欄位，扁平化並轉為小寫以符合 Backtrader 預期
 if isinstance(raw.columns, pd.MultiIndex):
     raw.columns = raw.columns.get_level_values(0)
