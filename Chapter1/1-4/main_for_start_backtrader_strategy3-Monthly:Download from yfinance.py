@@ -8,12 +8,22 @@ import yfinance as yf
 
 
 class MonthlyDCA(bt.Strategy):
-    params = dict(
-        investment_amount=10_000,  # 每月投入金額
-        investment_day=1,  # 每月幾號下單
-        start_date=dt.date(2020, 1, 1),
-        end_date=dt.date(2026, 4, 9),
+    # dict type
+    # params = dict(
+    #     investment_amount=10_000,  # 每月投入金額
+    #     investment_day=1,  # 每月幾號下單
+    #     start_date=dt.date(2020, 1, 1),
+    #     end_date=dt.date(2026, 4, 9),
+    # )
+
+    # tuple type
+    params = (
+        ("investment_amount", 10_000),  # 每月投入金額
+        ("investment_day", 1),  # 每月幾號下單
+        ("start_date", dt.date(2020, 1, 1)),
+        ("end_date", dt.date(2026, 4, 9)),
     )
+
 
     def __init__(self):
         # 計時器：每月指定日期觸發
