@@ -57,6 +57,8 @@ class MonthlyInvestmentStrategy(bt.Strategy):
     )
 
     def __init__(self):
+        # bt.Timer.SESSION_START: The open of each bar (beginning of session)
+        # bt.Timer.SESSION_END: The close of each bar (end of session)
         self.add_timer(
             when=bt.Timer.SESSION_START,
             monthdays=[self.params.investment_day],
