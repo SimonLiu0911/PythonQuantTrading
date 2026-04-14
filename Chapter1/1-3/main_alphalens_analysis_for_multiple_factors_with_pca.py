@@ -12,8 +12,8 @@ from Chapter1 import utils as chap1_utils
 
 chap1_utils.finlab_login()
 
-analysis_period_start_date = "2017-05-16"
-analysis_period_end_date = "2026-03-31"
+analysis_period_start_date = "2016-01-01"
+analysis_period_end_date = "2026-03-22"
 
 top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
     excluded_industry=[
@@ -22,7 +22,7 @@ top_N_stocks = chap1_utils.get_top_stocks_by_market_value(
         "存托憑證",
         "建材營造",
     ],
-    pre_list_date="2016-01-01",
+    pre_list_date="2015-01-01",
 )
 close_price_data = chap1_utils.get_daily_close_prices_data(
     stock_symbols=top_N_stocks,
@@ -66,7 +66,7 @@ for factor in all_factors_list:
         # .dropna()
     )
     factors_data_dict[factor] = factor_data
-    print(f"已取得因子 {factor} 的資料，資料的前 5 行：\n{factor_data.head()}\n")
+    # print(f"已取得因子 {factor} 的資料，資料的前 5 行：\n{factor_data.head()}\n")
 
 # 將所有因子資料合併成一個 DataFrame
 concat_factors_data = pd.concat(factors_data_dict.values(), ignore_index=True)

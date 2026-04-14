@@ -1,5 +1,6 @@
 # %%
 import os, sys
+import numpy as np
 from itertools import combinations
 from alphalens.tears import create_full_tear_sheet
 from alphalens.utils import get_clean_factor_and_forward_returns
@@ -68,7 +69,7 @@ for factor in factors_data_dict:
 pos_corr_factor_pair = list(combinations(pos_corr_factors, 5))
 print(f"總計有 {len(pos_corr_factor_pair)} 組五因子組合")
 
-# combined_df_dict 用來儲存每個五因子組合的排續結果。
+# combined_df_dict 用來儲存每個五因子組合的排序結果。
 combined_df_dict = {}
 for pair in pos_corr_factor_pair:
     combined_df_dict[pair] = chap1_utils.calculate_weighted_rank(
@@ -87,8 +88,24 @@ for pair in pos_corr_factor_pair:
 # 使用 Alphalens 進行因子分析
 for pair in combined_df_dict:
     print(f"pair: {pair}")
+    factor_series = combined_df_dict[pair]["weighted_rank"].copy()
+    factor_series.index = factor_series.index.set_levels(
+        factor_series.index.levels[1].map(
+            lambda x: f"{x}.TW" if not str(x).endswith(".TW") else str(x)
+        ),
+        level=1,
+    )
+    factor_series = factor_series.replace([np.inf, -np.inf], np.nan).dropna()
+
+    common_assets = factor_series.index.get_level_values("asset").unique().intersection(
+        close_price_data.columns
+    )
+    factor_series = factor_series[
+        factor_series.index.get_level_values("asset").isin(common_assets)
+    ]
+
     alphalens_factor_data = get_clean_factor_and_forward_returns(
-        factor=combined_df_dict[pair].squeeze(),
+        factor=factor_series,
         prices=close_price_data,
         periods=(1,),
     )

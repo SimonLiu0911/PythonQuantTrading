@@ -22,8 +22,8 @@ results = cerebro.run()
 """
 
 
-"""加載回測數據一：從 CSV 下載資料"""
 # %%
+"""加載回測數據一：從 CSV 下載資料"""
 import os
 import backtrader as bt
 
@@ -44,11 +44,17 @@ data = bt.feeds.GenericCSVData(
 
 cerebro = bt.Cerebro()  # 初始化 Cerebro 引擎
 cerebro.adddata(data)  # 將數據添加到 Cerebro 中
+cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="SharpeRatio")
+cerebro.addanalyzer(bt.analyzers.DrawDown, _name="DrawDown")
+
 results = cerebro.run()  # 執行回測
+print(f"Sharpe Ratio: {results[0].analyzers.SharpeRatio.get_analysis()["sharperatio"]}")
+print(f"Max Drawdown: {results[0].analyzers.DrawDown.get_analysis()['max']['drawdown']}")
 
+cerebro.plot(style="candlestick")
 
-"""加載回測數據二：從 yfinance 下載資料"""
 # %%
+"""加載回測數據二：從 yfinance 下載資料"""
 # 使用 PandasData 方法載入 yfinance 股票數據
 import os
 import backtrader as bt
@@ -87,35 +93,14 @@ results = cerebro.run()  # 執行回測
 print(results)
 
 
-"""加載回測數據三：自訂資料格式"""
 # %%
-# 生成一個自訂的資料集，包含日期、價格和自訂義因子
+"""加載回測數據三：自訂資料格式"""
+# 生成一個自訂的資料集，包含日期、價格和自訂因子
 import os
 import backtrader as bt
 import pandas as pd
 
-class PandasDataWithFactor(bt.feeds.PandasData):
-    params = (
-        ("datetime", "datetime"),  # 對應 datetime 欄位
-        ("open", "Open"),  # 對應 open 欄位
-        ("high", "High"),  # 對應 high 欄位
-        ("low", "Low"),  # 對應 low 欄位
-        ("close", "Close"),  # 對應 close 欄位
-        ("volume", "Volume"),  # 對應 volume 欄位
-        ("factor1", "factor1"),  # 定義自訂因子 factor1，對應第 6 欄位
-        ("factor2", "factor2"),  # 定義自訂因子 factor2，對應第 7 欄位
-        ("openinterest", -1),  # 不使用 open interest，設為 -1
-    )
-
-
-data = PandasDataWithFactor(dataname=data)  # 初始化 PandasDataWithFactor
-cerebro = bt.Cerebro()  # 初始化 Cerebro 引擎
-cerebro.adddata(data)  # 將數據添加到 Cerebro 中
-results = cerebro.run()  # 執行回測
-
-
-"""加載回測數據：自訂資料格式"""
-# 生成一個自訂的資料集，包含日期、價格和自訂因子
+# 先建立 DataFrame，再傳入 PandasDataWithFactor
 data = [
     ["2023-01-02", 74.06, 75.15, 73.80, 75.09, 135480400, 1, 11],
     ["2023-01-03", 74.29, 75.14, 73.13, 74.36, 146322800, 2, 12],
@@ -136,9 +121,26 @@ data.columns = [
     "factor1",
     "factor2",
 ]
-# 將 datetime 欄位轉換為日期時間格式
-data["datetime"] = pd.to_datetime(
-    data["datetime"]
-)
+# 將 datetime 欄位轉換為日期時間格式，並設為索引（PandasData 要求 datetime 作為索引）
+data["datetime"] = pd.to_datetime(data["datetime"])
+data = data.set_index("datetime")
 
 
+class PandasDataWithFactor(bt.feeds.PandasData):
+    params = (
+        ("datetime", None),       # None 表示使用 DataFrame 的索引作為 datetime
+        ("open", "Open"),         # 對應 Open 欄位
+        ("high", "High"),         # 對應 High 欄位
+        ("low", "Low"),           # 對應 Low 欄位
+        ("close", "Close"),       # 對應 Close 欄位
+        ("volume", "Volume"),     # 對應 Volume 欄位
+        ("factor1", "factor1"),   # 定義自訂因子 factor1
+        ("factor2", "factor2"),   # 定義自訂因子 factor2
+        ("openinterest", -1),     # 不使用 open interest，設為 -1
+    )
+
+
+data = PandasDataWithFactor(dataname=data)  # 初始化 PandasDataWithFactor
+cerebro = bt.Cerebro()  # 初始化 Cerebro 引擎
+cerebro.adddata(data)  # 將數據添加到 Cerebro 中
+results = cerebro.run()  # 執行回測

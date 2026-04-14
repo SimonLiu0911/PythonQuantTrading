@@ -51,6 +51,12 @@ class RSIStrategy(bt.Strategy):
                 self.log(f"訂單完成：買入執行，價格：{executed_price}，手續費：{executed_comm}")
             elif order.issell():
                 self.log(f"訂單完成：賣出執行，價格：{executed_price}，手續費：{executed_comm}")
+    
+    def notify_trade(self, trade):
+        """交易通知處理"""
+        if trade.isclosed:
+            profit_loss = np.round(trade.pnl, 3)
+            self.log(f"交易完成：盈虧：{profit_loss}")
 
 
 asset = "0050.TW"
@@ -67,8 +73,11 @@ cerebro.addstrategy(RSIStrategy)
 cerebro.adddata(data)
 cerebro.broker.setcash(10_000_000)
 cerebro.broker.setcommission(commission=0.000399)
+
 cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="SharpeRatio")
 cerebro.addanalyzer(bt.analyzers.DrawDown, _name="DrawDown")
+cerebro.addsizer(bt.sizers.PercentSizer, percents=90)
+
 results = cerebro.run()
 
 print("夏普比率：", results[0].analyzers.SharpeRatio.get_analysis()["sharperatio"])

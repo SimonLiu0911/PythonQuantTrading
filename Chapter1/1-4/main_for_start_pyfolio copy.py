@@ -7,10 +7,11 @@ from datetime import date
 # 設定要取得的數據區間：2015/1/1 ~ today
 start_date = "2015-01-01"
 end_date = date.today().strftime("%Y-%m-%d")
+stock_symbol = "0050.TW"
 
 data = bt.feeds.PandasData(
     dataname=yf.download(
-        "0050.TW",
+        stock_symbol,
         start_date,
         end_date,
         auto_adjust=False,  # keep raw prices to avoid yfinance auto-adjust warning
@@ -31,8 +32,8 @@ class MonthlyInvestmentStrategy(bt.Strategy):
         )
         self.order = None
 
+    """定時器觸發時執行操作"""
     def notify_timer(self, timer, when, *args, **kwargs):
-        """定時器觸發時執行操作"""
         cash_available = self.broker.getcash()
         price = self.data.close[0]
         size = min(self.params.cash_to_invest, cash_available) // price
