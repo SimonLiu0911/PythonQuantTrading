@@ -68,4 +68,12 @@ pyfoliozer = strat.analyzers.getbyname("pyfolio")
 returns, positions, transactions, gross_lev = pyfoliozer.get_pf_items()
 
 # 使用 PyFolio 生成完整的投資報告，涵蓋收益、持倉、交易等方面的分析
-pf.create_full_tear_sheet(returns, positions, transactions)
+# pf.create_full_tear_sheet(returns, positions, transactions)
+pf.create_full_tear_sheet(returns, positions=positions, transactions=transactions)
+
+import pyfolio.timeseries as ts
+# Just stats, no charts
+# print(ts.perf_stats(returns))
+
+# Just the returns chart
+# pf.create_returns_tear_sheet(returns)
